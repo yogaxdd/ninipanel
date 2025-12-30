@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Console - NiniPanel</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="../styles.css">
+    <style>
+        .console-container {
+            height: calc(100vh - 200px);
+            min-height: 400px;
+        }
+
+        .server-selector {
+            display: flex;
+            gap: var(--spacing-md);
+            margin-bottom: var(--spacing-lg);
+            flex-wrap: wrap;
+        }
+
+        .server-tab {
+            padding: var(--spacing-sm) var(--spacing-lg);
+            background: var(--glass-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+
+        .server-tab:hover {
+            border-color: var(--primary);
+        }
+
+        .server-tab.active {
+            background: rgba(99, 102, 241, 0.1);
+            border-color: var(--primary);
+        }
+
+        .terminal {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .terminal-body {
+            flex: 1;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="dashboard-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <a href="../index.html" class="sidebar-brand">
+                <span>🚀</span>
+                <span class="text-gradient">NiniPanel</span>
+            </a>
+
+            <ul class="sidebar-menu">
+                <li><a href="dashboard.html">📊 Dashboard</a></li>
+                <li><a href="servers.html">🖥️ Server Saya</a></li>
+                <li><a href="console.html" class="active">💻 Console</a></li>
+                <li><a href="files.html">📁 File Manager</a></li>
+                <li><a href="startup.html">⚙️ Startup</a></li>
+                <li><a href="backups.html">💾 Backups</a></li>
+            </ul>
+
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">Akun</div>
+                <ul class="sidebar-menu">
+                    <li><a href="billing.html">💳 Billing</a></li>
+                    <li><a href="support.html">🎫 Support</a></li>
+                    <li><a href="#" onclick="Auth.logout()">🚪 Logout</a></li>
+                </ul>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="page-header">
+                <h1>Console</h1>
+                <p>Terminal akses ke VPS Anda</p>
+            </div>
+
+            <div class="server-selector" id="serverSelector">
+                <div style="color: var(--text-secondary);">Pilih server:</div>
+            </div>
+
+            <div class="console-container" id="consoleContainer">
+                <div class="card"
+                    style="height: 100%; display: flex; align-items: center; justify-content: center; text-align: center;">
+                    <div>
+                        <div style="font-size: 4rem; margin-bottom: var(--spacing-lg);">💻</div>
+                        <h3 style="margin-bottom: var(--spacing-sm);">Tidak Ada Server</h3>
+                        <p style="color: var(--text-secondary);">Anda belum memiliki VPS aktif untuk mengakses console.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/storage.js"></script>
+    <script src="../js/auth.js"></script>
+    <script>
+        // Check login
+        if (!Auth.requireLogin()) {
+            // Redirect handled by requireLogin
+        }
+
+        const user = Auth.getCurrentUser();
+        let selectedServer = null;
+        let commandHistory = [];
+        let historyIndex = -1;
+
+        // URL param
+        const urlParams = new URLSearchParams(window.location.search);
+        const serverIdParam = urlParams.get('server');
+
+        // Load servers
+        function loadServers() {
+            const servers = Storage.getServersByUser(user.id);
+            const selector = document.getElementById('serverSelector');
+
+            if (servers.length === 0) {
+                return;
+            }
+
+            selector.innerHTML = '<div style="color: var(--text-secondary);">Pilih server:</div>' +
+                servers.map(server => `
+          <div class="server-tab ${serverIdParam === server.id ? 'active' : ''}" data-server="${server.id}">
+            <span class="vps-status ${server.status}"><span class="dot"></span></span>
+            <span>${server.name || 'VPS-' + server.id.substring(0, 6).toUpperCase()}</span>
+          </div>
+        `).join('');
+
+            // Add click handlers
+            selector.querySelectorAll('.server-tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    selector.querySelectorAll('.server-tab').forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    const serverId = tab.dataset.server;
+                    selectedServer = servers.find(s => s.id === serverId);
+                    loadConsole();
+                });
+            });
+
+            // Auto-select first or from URL
+            const targetServer = serverIdParam ? servers.find(s => s.id === serverIdParam) : servers[0];
+            if (targetServer) {
+                selectedServer = targetServer;
+                selector.querySelector(`[data-server="${targetServer.id}"]`)?.classList.add('active');
+                loadConsole();
+            }
+        }
+
+        function loadConsole() {
+            if (!selectedServer) return;
+
+            const container = document.getElementById('consoleContainer');
+
+            if (selectedServer.status !== 'online') {
+                container.innerHTML = `
+          <div class="card" style="height: 100%; display: flex; align-items: center; justify-content: center; text-align: center;">
+            <div>
+              <div style="font-size: 4rem; margin-bottom: var(--spacing-lg);">⚠️</div>
+              <h3 style="margin-bottom: var(--spacing-sm);">Server Offline</h3>
+              <p style="color: var(--text-secondary); margin-bottom: var(--spacing-lg);">Server harus dalam keadaan online untuk mengakses console.</p>
+              <button class="btn btn-success" onclick="startAndConnect()">▶️ Start Server</button>
+            </div>
+          </div>
+        `;
+                return;
+            }
+
+            container.innerHTML = `
+        <div class="terminal">
+          <div class="terminal-header">
+            <span class="terminal-dot red"></span>
+            <span class="terminal-dot yellow"></span>
+            <span class="terminal-dot green"></span>
+            <span class="terminal-title">${selectedServer.name || 'VPS-' + selectedServer.id.substring(0, 6).toUpperCase()} - ${selectedServer.ip || '192.168.1.100'}</span>
+          </div>
+          <div class="terminal-body" id="terminalBody">
+            <div class="terminal-line">
+              <span class="terminal-output">Welcome to NiniPanel VPS Console</span>
+            </div>
+            <div class="terminal-line">
+              <span class="terminal-output">Server: ${selectedServer.planName} (${selectedServer.ram}MB RAM, ${selectedServer.disk >= 1024 ? (selectedServer.disk / 1024) + 'GB' : selectedServer.disk + 'MB'} Disk)</span>
+            </div>
+            <div class="terminal-line">
+              <span class="terminal-output">Type 'help' for available commands.</span>
+            </div>
+            <div class="terminal-line">
+              <span class="terminal-output">&nbsp;</span>
+            </div>
+          </div>
+          <div class="terminal-input">
+            <span class="terminal-prompt">root@vps:~$</span>
+            <input type="text" id="terminalInput" placeholder="Enter command..." autofocus>
+          </div>
+        </div>
+      `;
+
+            // Terminal input handling
+            const input = document.getElementById('terminalInput');
+            const body = document.getElementById('terminalBody');
+
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    const command = input.value.trim();
+                    if (command) {
+                        executeCommand(command);
+                        commandHistory.push(command);
+                        historyIndex = commandHistory.length;
+                    }
+                    input.value = '';
+                } else if (e.key === 'ArrowUp') {
+                    if (historyIndex > 0) {
+                        historyIndex--;
+                        input.value = commandHistory[historyIndex];
+                    }
+                } else if (e.key === 'ArrowDown') {
+                    if (historyIndex < commandHistory.length - 1) {
+                        historyIndex++;
+                        input.value = commandHistory[historyIndex];
+                    } else {
+                        historyIndex = commandHistory.length;
+                        input.value = '';
+                    }
+                }
+            });
+
+            // Focus input on click
+            container.addEventListener('click', () => input.focus());
+        }
+
+        function executeCommand(command) {
+            const body = document.getElementById('terminalBody');
+
+            // Add command line
+            body.innerHTML += `
+        <div class="terminal-line">
+          <span class="terminal-prompt">root@vps:~$</span>
+          <span class="terminal-command">${escapeHtml(command)}</span>
+        </div>
+      `;
+
+            // Process command
+            const output = processCommand(command);
+            body.innerHTML += `
+        <div class="terminal-line">
+          <span class="terminal-output">${output}</span>
+        </div>
+      `;
+
+            // Scroll to bottom
+            body.scrollTop = body.scrollHeight;
+        }
+
+        function processCommand(cmd) {
+            const parts = cmd.toLowerCase().split(' ');
+            const command = parts[0];
+
+            const commands = {
+                'help': `Available commands:
+  help      - Show this help message
+  ls        - List files
+  pwd       - Print working directory
+  whoami    - Show current user
+  date      - Show current date/time
+  uptime    - Show system uptime
+  free      - Show memory usage
+  df        - Show disk usage
+  top       - Show running processes
+  clear     - Clear terminal
+  echo      - Print text
+  cat       - Show file contents
+  neofetch  - Show system info`,
+
+                'ls': `drwxr-xr-x  2 root root 4096 Dec 29 12:00 .
+drwxr-xr-x  3 root root 4096 Dec 29 11:00 ..
+-rw-r--r--  1 root root  220 Dec 29 11:00 .bash_logout
+-rw-r--r--  1 root root 3771 Dec 29 11:00 .bashrc
+-rw-r--r--  1 root root  807 Dec 29 11:00 .profile
+drwxr-xr-x  2 root root 4096 Dec 29 12:00 public_html`,
+
+                'pwd': '/root',
+
+                'whoami': 'root',
+
+                'date': new Date().toString(),
+
+                'uptime': ` ${new Date().toTimeString().split(' ')[0]} up ${Math.floor(Math.random() * 30) + 1} days, ${Math.floor(Math.random() * 24)}:${Math.floor(Math.random() * 60).toString().padStart(2, '0')}, 1 user, load average: 0.${Math.floor(Math.random() * 99)}, 0.${Math.floor(Math.random() * 99)}, 0.${Math.floor(Math.random() * 99)}`,
+
+                'free': `              total        used        free      shared  buff/cache   available
+Mem:          ${selectedServer.ram}M         ${Math.floor(selectedServer.ram * 0.4)}M          ${Math.floor(selectedServer.ram * 0.3)}M          0M          ${Math.floor(selectedServer.ram * 0.3)}M          ${Math.floor(selectedServer.ram * 0.6)}M
+Swap:           0M           0M           0M`,
+
+                'df': `Filesystem     1K-blocks    Used Available Use% Mounted on
+/dev/vda1       ${selectedServer.disk * 1024}   ${Math.floor(selectedServer.disk * 0.2) * 1024}   ${Math.floor(selectedServer.disk * 0.8) * 1024}  20% /
+tmpfs              ${Math.floor(selectedServer.ram / 2) * 1024}       0     ${Math.floor(selectedServer.ram / 2) * 1024}   0% /dev/shm`,
+
+                'top': `top - ${new Date().toTimeString().split(' ')[0]} up 5 days, 2:30, 1 user, load average: 0.08, 0.03, 0.01
+Tasks:  42 total,   1 running,  41 sleeping,   0 stopped,   0 zombie
+%Cpu(s):  1.5 us,  0.5 sy,  0.0 ni, 97.8 id,  0.2 wa,  0.0 hi,  0.0 si
+MiB Mem :    ${selectedServer.ram}.0 total,   ${Math.floor(selectedServer.ram * 0.6)}.0 free,   ${Math.floor(selectedServer.ram * 0.3)}.0 used,   ${Math.floor(selectedServer.ram * 0.1)}.0 buff/cache
+MiB Swap:      0.0 total,      0.0 free,      0.0 used.   ${Math.floor(selectedServer.ram * 0.7)}.0 avail Mem
+
+  PID USER      PR  NI    VIRT    RES    SHR S  %CPU  %MEM     TIME+ COMMAND
+    1 root      20   0    2468   1580   1480 S   0.0   1.5   0:01.23 init
+  101 root      20   0    5236   3840   3280 S   0.0   3.8   0:00.42 sshd`,
+
+                'clear': 'CLEAR',
+
+                'neofetch': `
+       _,met$$$$$gg.          root@vps
+    ,g$$$$$$$$$$$$$$$P.       ---------
+  ,g$$P"     """Y$$.".        OS: NiniPanel VPS
+ ,$$P'              \`$$$.     Host: ${selectedServer.planName}
+',$$P       ,ggs.     \`$$b:   Kernel: 5.15.0-generic
+\`d$$'     ,$P"'   .    $$$    Uptime: ${Math.floor(Math.random() * 30) + 1} days
+ $$P      d$'     ,    $$P    Memory: ${Math.floor(selectedServer.ram * 0.3)}M / ${selectedServer.ram}M
+ $$:      $$.   -    ,d$$'    Disk: ${Math.floor(selectedServer.disk * 0.2)}M / ${selectedServer.disk}M
+ $$;      Y$b._   _,d$P'      CPU: ${selectedServer.cpu} Core(s)
+ Y$$.    \`.\`"Y$$$$P"'         IP: ${selectedServer.ip || '192.168.1.100'}
+ \`$$b      "-.__
+  \`Y$$
+   \`Y$$.
+     \`$$b.
+       \`Y$$b.
+          \`"Y$b._
+              \`""""`
+            };
+
+            if (command === 'clear') {
+                document.getElementById('terminalBody').innerHTML = '';
+                return '';
+            }
+
+            if (command === 'echo') {
+                return parts.slice(1).join(' ');
+            }
+
+            if (command === 'cat') {
+                if (parts[1]) {
+                    return `cat: ${parts[1]}: Permission denied`;
+                }
+                return 'cat: missing file operand';
+            }
+
+            if (commands[command]) {
+                return commands[command];
+            }
+
+            return `bash: ${command}: command not found`;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function startAndConnect() {
+            if (!selectedServer) return;
+
+            Storage.updateServer(selectedServer.id, { status: 'starting' });
+            loadServers();
+
+            setTimeout(() => {
+                Storage.updateServer(selectedServer.id, { status: 'online' });
+                selectedServer.status = 'online';
+                loadConsole();
+            }, 2000);
+        }
+
+        loadServers();
+    </script>
+</body>
+
+</html>

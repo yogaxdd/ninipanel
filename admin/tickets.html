@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tickets - NiniPanel Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../styles.css">
+    <style>
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            height: 400px;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: var(--spacing-lg);
+        }
+
+        .chat-message {
+            margin-bottom: var(--spacing-lg);
+            display: flex;
+            gap: var(--spacing-md);
+        }
+
+        .chat-message.admin {
+            flex-direction: row-reverse;
+        }
+
+        .chat-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+
+        .chat-message.admin .chat-avatar {
+            background: linear-gradient(135deg, var(--success), #059669);
+        }
+
+        .chat-bubble {
+            background: var(--glass-bg);
+            padding: var(--spacing-md) var(--spacing-lg);
+            border-radius: var(--radius-lg);
+            max-width: 70%;
+        }
+
+        .chat-message.admin .chat-bubble {
+            background: rgba(16, 185, 129, 0.2);
+        }
+
+        .chat-bubble .time {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: var(--spacing-sm);
+        }
+
+        .chat-input {
+            display: flex;
+            gap: var(--spacing-md);
+            padding: var(--spacing-lg);
+            border-top: 1px solid var(--border-color);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="dashboard-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <a href="../index.html" class="sidebar-brand">
+                <span>🚀</span>
+                <span class="text-gradient">NiniPanel</span>
+            </a>
+
+            <div
+                style="padding: var(--spacing-sm) var(--spacing-md); background: rgba(239, 68, 68, 0.1); border-radius: var(--radius-md); margin-bottom: var(--spacing-lg);">
+                <span style="color: var(--danger); font-weight: 600; font-size: 0.75rem;">👑 ADMIN PANEL</span>
+            </div>
+
+            <ul class="sidebar-menu">
+                <li><a href="index.html">📊 Dashboard</a></li>
+                <li><a href="orders.html">📦 Orders</a></li>
+                <li><a href="users.html">👥 Users</a></li>
+                <li><a href="servers.html">🖥️ Servers</a></li>
+                <li><a href="tickets.html" class="active">🎫 Tickets</a></li>
+                <li><a href="settings.html">⚙️ Settings</a></li>
+            </ul>
+
+            <div class="sidebar-section">
+                <ul class="sidebar-menu">
+                    <li><a href="../index.html">🌐 View Site</a></li>
+                    <li><a href="#" onclick="Auth.logout()">🚪 Logout</a></li>
+                </ul>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="page-header">
+                <h1>Support Tickets</h1>
+                <p>Kelola tiket support dari user</p>
+            </div>
+
+            <!-- Stats -->
+            <div class="stats-grid" style="grid-template-columns: repeat(3, 1fr); margin-bottom: var(--spacing-xl);">
+                <div class="card stat-card">
+                    <div class="stat-value" id="openTickets">0</div>
+                    <div class="stat-label">Open</div>
+                </div>
+                <div class="card stat-card">
+                    <div class="stat-value" id="repliedTickets">0</div>
+                    <div class="stat-label">Replied</div>
+                </div>
+                <div class="card stat-card">
+                    <div class="stat-value" id="closedTickets">0</div>
+                    <div class="stat-label">Closed</div>
+                </div>
+            </div>
+
+            <!-- Tickets Table -->
+            <div class="card">
+                <div class="table-container">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Subject</th>
+                                <th>User</th>
+                                <th>Category</th>
+                                <th>Status</th>
+                                <th>Date</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ticketsBody">
+                            <tr>
+                                <td colspan="7"
+                                    style="text-align: center; padding: var(--spacing-2xl); color: var(--text-secondary);">
+                                    Tidak ada tiket.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Reply Modal -->
+    <div class="modal-overlay" id="replyModal">
+        <div class="modal" style="max-width: 600px;">
+            <div class="modal-header">
+                <h3 id="ticketSubject">Ticket Detail</h3>
+                <button class="modal-close" onclick="closeModal('replyModal')">&times;</button>
+            </div>
+            <div class="modal-body" style="padding: 0;">
+                <div class="chat-container">
+                    <div class="chat-messages" id="chatMessages"></div>
+                    <div class="chat-input">
+                        <input type="text" class="form-input" id="replyInput" placeholder="Tulis balasan...">
+                        <button class="btn btn-primary" onclick="sendReply()">Kirim</button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-danger btn-sm" onclick="closeTicket()">Close Ticket</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/storage.js"></script>
+    <script src="../js/auth.js"></script>
+    <script>
+        // Check admin
+        if (!Auth.requireAdmin()) {
+            // Redirect handled by requireAdmin
+        }
+
+        let currentTicketId = null;
+
+        // Load tickets
+        function loadTickets() {
+            const tickets = Storage.getTickets();
+            const users = Storage.getUsers();
+            const tbody = document.getElementById('ticketsBody');
+
+            // Stats
+            document.getElementById('openTickets').textContent = tickets.filter(t => t.status === 'open').length;
+            document.getElementById('repliedTickets').textContent = tickets.filter(t => t.status === 'replied').length;
+            document.getElementById('closedTickets').textContent = tickets.filter(t => t.status === 'closed').length;
+
+            if (tickets.length === 0) {
+                return;
+            }
+
+            const statusBadges = {
+                open: '<span class="badge badge-success">Open</span>',
+                replied: '<span class="badge badge-primary">Replied</span>',
+                closed: '<span class="badge badge-danger">Closed</span>'
+            };
+
+            const categoryLabels = {
+                billing: 'Billing',
+                technical: 'Technical',
+                sales: 'Sales',
+                other: 'Other'
+            };
+
+            tbody.innerHTML = tickets.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).map(ticket => {
+                const user = users.find(u => u.id === ticket.userId);
+
+                return `
+          <tr>
+            <td><code>${ticket.id.substring(0, 8).toUpperCase()}</code></td>
+            <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${ticket.subject}</td>
+            <td>${user?.name || 'Unknown'}</td>
+            <td>${categoryLabels[ticket.category] || ticket.category}</td>
+            <td>${statusBadges[ticket.status]}</td>
+            <td>${new Date(ticket.createdAt).toLocaleDateString('id-ID')}</td>
+            <td>
+              <button class="btn btn-primary btn-sm" onclick="openReplyModal('${ticket.id}')">Reply</button>
+            </td>
+          </tr>
+        `;
+            }).join('');
+        }
+
+        function openReplyModal(ticketId) {
+            const tickets = Storage.getTickets();
+            const currentTicket = tickets.find(t => t.id === ticketId);
+
+            if (!currentTicket) return;
+
+            currentTicketId = ticketId;
+            document.getElementById('ticketSubject').textContent = currentTicket.subject;
+
+            renderMessages(currentTicket);
+            document.getElementById('replyModal').classList.add('active');
+        }
+
+        function renderMessages(ticket) {
+            const messages = ticket.messages || [];
+            const container = document.getElementById('chatMessages');
+
+            container.innerHTML = messages.map(msg => {
+                const isAdmin = msg.sender === 'admin';
+                const initials = msg.senderName?.split(' ').map(n => n[0]).join('').substring(0, 2) || '??';
+                const time = new Date(msg.createdAt).toLocaleString('id-ID', {
+                    day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
+                });
+
+                return `
+          <div class="chat-message ${isAdmin ? 'admin' : ''}">
+            <div class="chat-avatar">${initials}</div>
+            <div class="chat-bubble">
+              <div style="font-weight: 500; margin-bottom: 4px;">${msg.senderName}</div>
+              <div>${msg.content}</div>
+              <div class="time">${time}</div>
+            </div>
+          </div>
+        `;
+            }).join('');
+
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('active');
+        }
+
+        function sendReply() {
+            const input = document.getElementById('replyInput');
+            const content = input.value.trim();
+
+            if (!content || !currentTicketId) return;
+
+            Storage.addTicketMessage(currentTicketId, {
+                sender: 'admin',
+                senderName: 'Admin',
+                content
+            });
+
+            Storage.updateTicket(currentTicketId, { status: 'replied' });
+
+            // Refresh
+            const tickets = Storage.getTickets();
+            const currentTicket = tickets.find(t => t.id === currentTicketId);
+
+            input.value = '';
+            renderMessages(currentTicket);
+            loadTickets();
+        }
+
+        function closeTicket() {
+            if (!currentTicketId) return;
+
+            if (confirm('Yakin ingin menutup tiket ini?')) {
+                Storage.updateTicket(currentTicketId, { status: 'closed' });
+                closeModal('replyModal');
+                loadTickets();
+            }
+        }
+
+        // Enter to send
+        document.getElementById('replyInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendReply();
+        });
+
+        loadTickets();
+    </script>
+</body>
+
+</html>

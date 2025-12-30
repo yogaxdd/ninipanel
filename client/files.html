@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Manager - NiniPanel</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../styles.css">
+    <style>
+        .file-browser {
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: var(--spacing-lg);
+            min-height: 500px;
+        }
+
+        @media (max-width: 768px) {
+            .file-browser {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .folder-tree {
+            background: var(--glass-bg);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-md);
+        }
+
+        .folder-item {
+            padding: var(--spacing-sm) var(--spacing-md);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            color: var(--text-secondary);
+            transition: all var(--transition-fast);
+        }
+
+        .folder-item:hover {
+            background: var(--glass-bg);
+            color: var(--text-primary);
+        }
+
+        .folder-item.active {
+            background: rgba(99, 102, 241, 0.1);
+            color: var(--primary-light);
+        }
+
+        .folder-item.nested {
+            padding-left: var(--spacing-xl);
+        }
+
+        .file-list {
+            background: var(--glass-bg);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+        }
+
+        .file-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--spacing-md) var(--spacing-lg);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .file-path {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+
+        .file-actions {
+            display: flex;
+            gap: var(--spacing-sm);
+        }
+
+        .file-table {
+            width: 100%;
+        }
+
+        .file-row {
+            display: grid;
+            grid-template-columns: 1fr 100px 150px 100px;
+            padding: var(--spacing-md) var(--spacing-lg);
+            border-bottom: 1px solid var(--border-color);
+            align-items: center;
+            transition: background var(--transition-fast);
+        }
+
+        .file-row:hover {
+            background: var(--glass-bg);
+        }
+
+        .file-row.header {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        .file-name {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+
+        .file-name .icon {
+            font-size: 1.25rem;
+        }
+
+        .file-size,
+        .file-modified,
+        .file-permissions {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="dashboard-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <a href="../index.html" class="sidebar-brand">
+                <span>🚀</span>
+                <span class="text-gradient">NiniPanel</span>
+            </a>
+
+            <ul class="sidebar-menu">
+                <li><a href="dashboard.html">📊 Dashboard</a></li>
+                <li><a href="servers.html">🖥️ Server Saya</a></li>
+                <li><a href="console.html">💻 Console</a></li>
+                <li><a href="files.html" class="active">📁 File Manager</a></li>
+                <li><a href="startup.html">⚙️ Startup</a></li>
+                <li><a href="backups.html">💾 Backups</a></li>
+            </ul>
+
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">Akun</div>
+                <ul class="sidebar-menu">
+                    <li><a href="billing.html">💳 Billing</a></li>
+                    <li><a href="support.html">🎫 Support</a></li>
+                    <li><a href="#" onclick="Auth.logout()">🚪 Logout</a></li>
+                </ul>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="page-header">
+                <h1>File Manager</h1>
+                <p>Kelola file di VPS Anda</p>
+            </div>
+
+            <div class="server-selector" id="serverSelector"
+                style="display: flex; gap: var(--spacing-md); margin-bottom: var(--spacing-lg); flex-wrap: wrap;">
+                <div style="color: var(--text-secondary);">Pilih server:</div>
+            </div>
+
+            <div id="fileManagerContainer">
+                <div class="card" style="text-align: center; padding: var(--spacing-3xl);">
+                    <div style="font-size: 4rem; margin-bottom: var(--spacing-lg);">📁</div>
+                    <h3 style="margin-bottom: var(--spacing-sm);">Tidak Ada Server</h3>
+                    <p style="color: var(--text-secondary);">Anda belum memiliki VPS aktif.</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/storage.js"></script>
+    <script src="../js/auth.js"></script>
+    <script>
+        // Check login
+        if (!Auth.requireLogin()) {
+            // Redirect handled by requireLogin
+        }
+
+        const user = Auth.getCurrentUser();
+        let selectedServer = null;
+        let currentPath = '/root';
+
+        // Mock file system
+        const fileSystem = {
+            '/root': [
+                { name: '..', type: 'folder', size: '-', modified: '-', permissions: 'drwxr-xr-x' },
+                { name: 'public_html', type: 'folder', size: '-', modified: 'Dec 29 12:00', permissions: 'drwxr-xr-x' },
+                { name: 'logs', type: 'folder', size: '-', modified: 'Dec 29 10:00', permissions: 'drwxr-xr-x' },
+                { name: '.bashrc', type: 'file', size: '3.7 KB', modified: 'Dec 29 11:00', permissions: '-rw-r--r--' },
+                { name: '.profile', type: 'file', size: '807 B', modified: 'Dec 29 11:00', permissions: '-rw-r--r--' },
+                { name: 'config.json', type: 'file', size: '1.2 KB', modified: 'Dec 29 14:30', permissions: '-rw-r--r--' }
+            ],
+            '/root/public_html': [
+                { name: '..', type: 'folder', size: '-', modified: '-', permissions: 'drwxr-xr-x' },
+                { name: 'index.html', type: 'file', size: '2.4 KB', modified: 'Dec 29 15:00', permissions: '-rw-r--r--' },
+                { name: 'style.css', type: 'file', size: '5.1 KB', modified: 'Dec 29 15:00', permissions: '-rw-r--r--' },
+                { name: 'script.js', type: 'file', size: '3.8 KB', modified: 'Dec 29 14:45', permissions: '-rw-r--r--' },
+                { name: 'images', type: 'folder', size: '-', modified: 'Dec 29 12:00', permissions: 'drwxr-xr-x' }
+            ],
+            '/root/logs': [
+                { name: '..', type: 'folder', size: '-', modified: '-', permissions: 'drwxr-xr-x' },
+                { name: 'access.log', type: 'file', size: '15.2 KB', modified: 'Dec 29 16:00', permissions: '-rw-r--r--' },
+                { name: 'error.log', type: 'file', size: '2.1 KB', modified: 'Dec 29 15:30', permissions: '-rw-r--r--' }
+            ]
+        };
+
+        // Load servers
+        function loadServers() {
+            const servers = Storage.getServersByUser(user.id);
+            const selector = document.getElementById('serverSelector');
+
+            if (servers.length === 0) return;
+
+            selector.innerHTML = '<div style="color: var(--text-secondary);">Pilih server:</div>' +
+                servers.map(server => `
+          <div class="server-tab" data-server="${server.id}" style="padding: var(--spacing-sm) var(--spacing-lg); background: var(--glass-bg); border: 1px solid var(--border-color); border-radius: var(--radius-md); cursor: pointer; display: flex; align-items: center; gap: var(--spacing-sm);">
+            <span class="vps-status ${server.status}"><span class="dot"></span></span>
+            <span>${server.name || 'VPS-' + server.id.substring(0, 6).toUpperCase()}</span>
+          </div>
+        `).join('');
+
+            selector.querySelectorAll('.server-tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    selector.querySelectorAll('.server-tab').forEach(t => t.style.borderColor = 'var(--border-color)');
+                    tab.style.borderColor = 'var(--primary)';
+                    selectedServer = servers.find(s => s.id === tab.dataset.server);
+                    loadFileManager();
+                });
+            });
+
+            // Auto-select first
+            if (servers[0]) {
+                selectedServer = servers[0];
+                selector.querySelector('.server-tab').style.borderColor = 'var(--primary)';
+                loadFileManager();
+            }
+        }
+
+        function loadFileManager() {
+            if (!selectedServer || selectedServer.status !== 'online') {
+                document.getElementById('fileManagerContainer').innerHTML = `
+          <div class="card" style="text-align: center; padding: var(--spacing-3xl);">
+            <div style="font-size: 4rem; margin-bottom: var(--spacing-lg);">⚠️</div>
+            <h3 style="margin-bottom: var(--spacing-sm);">Server Offline</h3>
+            <p style="color: var(--text-secondary);">Server harus online untuk mengakses file manager.</p>
+          </div>
+        `;
+                return;
+            }
+
+            renderFileManager();
+        }
+
+        function renderFileManager() {
+            const files = fileSystem[currentPath] || [];
+
+            document.getElementById('fileManagerContainer').innerHTML = `
+        <div class="file-browser">
+          <div class="folder-tree">
+            <h4 style="margin-bottom: var(--spacing-md); padding: 0 var(--spacing-md);">Folders</h4>
+            <div class="folder-item ${currentPath === '/root' ? 'active' : ''}" onclick="navigateTo('/root')">📁 /root</div>
+            <div class="folder-item nested ${currentPath === '/root/public_html' ? 'active' : ''}" onclick="navigateTo('/root/public_html')">📁 public_html</div>
+            <div class="folder-item nested ${currentPath === '/root/logs' ? 'active' : ''}" onclick="navigateTo('/root/logs')">📁 logs</div>
+          </div>
+          
+          <div class="file-list">
+            <div class="file-header">
+              <div class="file-path">
+                <span>📂</span>
+                <span>${currentPath}</span>
+              </div>
+              <div class="file-actions">
+                <button class="btn btn-secondary btn-sm" onclick="alert('Upload file - Coming soon!')">📤 Upload</button>
+                <button class="btn btn-secondary btn-sm" onclick="alert('New folder - Coming soon!')">📁 New Folder</button>
+              </div>
+            </div>
+            
+            <div class="file-table">
+              <div class="file-row header">
+                <div>Name</div>
+                <div>Size</div>
+                <div>Modified</div>
+                <div>Permissions</div>
+              </div>
+              
+              ${files.map(file => `
+                <div class="file-row" ${file.type === 'folder' && file.name !== '..' ? `onclick="navigateTo('${currentPath}/${file.name}')"` : ''} ${file.name === '..' ? `onclick="navigateUp()"` : ''} style="${file.type === 'folder' ? 'cursor: pointer;' : ''}">
+                  <div class="file-name">
+                    <span class="icon">${file.type === 'folder' ? '📁' : getFileIcon(file.name)}</span>
+                    <span>${file.name}</span>
+                  </div>
+                  <div class="file-size">${file.size}</div>
+                  <div class="file-modified">${file.modified}</div>
+                  <div class="file-permissions" style="font-family: var(--font-mono); font-size: 0.75rem;">${file.permissions}</div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+      `;
+        }
+
+        function getFileIcon(filename) {
+            const ext = filename.split('.').pop().toLowerCase();
+            const icons = {
+                'html': '🌐',
+                'css': '🎨',
+                'js': '📜',
+                'json': '📋',
+                'log': '📄',
+                'txt': '📄',
+                'md': '📝',
+                'png': '🖼️',
+                'jpg': '🖼️',
+                'gif': '🖼️'
+            };
+            return icons[ext] || '📄';
+        }
+
+        function navigateTo(path) {
+            if (fileSystem[path]) {
+                currentPath = path;
+                renderFileManager();
+            }
+        }
+
+        function navigateUp() {
+            const parts = currentPath.split('/');
+            if (parts.length > 2) {
+                parts.pop();
+                navigateTo(parts.join('/'));
+            }
+        }
+
+        loadServers();
+    </script>
+</body>
+
+</html>

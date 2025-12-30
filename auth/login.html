@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - NiniPanel</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../styles.css">
+    <style>
+        .auth-page {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: var(--spacing-xl);
+        }
+
+        .auth-container {
+            width: 100%;
+            max-width: 420px;
+        }
+
+        .auth-header {
+            text-align: center;
+            margin-bottom: var(--spacing-2xl);
+        }
+
+        .auth-header .logo {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            font-size: 1.5rem;
+            font-weight: 800;
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .auth-header h1 {
+            font-size: 1.75rem;
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .auth-header p {
+            color: var(--text-secondary);
+        }
+
+        .auth-card {
+            padding: var(--spacing-2xl);
+        }
+
+        .auth-divider {
+            display: flex;
+            align-items: center;
+            margin: var(--spacing-xl) 0;
+            color: var(--text-muted);
+            font-size: 0.875rem;
+        }
+
+        .auth-divider::before,
+        .auth-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border-color);
+        }
+
+        .auth-divider span {
+            padding: 0 var(--spacing-md);
+        }
+
+        .auth-footer {
+            text-align: center;
+            margin-top: var(--spacing-xl);
+            color: var(--text-secondary);
+        }
+
+        .auth-footer a {
+            color: var(--primary-light);
+            font-weight: 500;
+        }
+
+        .remember-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--spacing-lg);
+            font-size: 0.875rem;
+        }
+
+        .remember-row label {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            color: var(--text-secondary);
+            cursor: pointer;
+        }
+
+        .remember-row a {
+            color: var(--primary-light);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="auth-page">
+        <div class="auth-container">
+            <div class="auth-header">
+                <a href="../index.html" class="logo">
+                    <span>🚀</span>
+                    <span class="text-gradient">NiniPanel</span>
+                </a>
+                <h1>Selamat Datang Kembali</h1>
+                <p>Masuk ke akun Anda untuk mengelola VPS</p>
+            </div>
+
+            <div class="card auth-card">
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label class="form-label">Email</label>
+                        <input type="email" class="form-input" id="email" placeholder="nama@email.com" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Password</label>
+                        <input type="password" class="form-input" id="password" placeholder="••••••••" required>
+                    </div>
+
+                    <div class="remember-row">
+                        <label>
+                            <input type="checkbox" id="remember">
+                            Ingat saya
+                        </label>
+                        <a href="#">Lupa password?</a>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">Masuk</button>
+                </form>
+
+                <div class="auth-footer">
+                    Belum punya akun? <a href="register.html">Daftar sekarang</a>
+                </div>
+            </div>
+
+            <div style="text-align: center; margin-top: var(--spacing-xl);">
+                <a href="../index.html" style="color: var(--text-secondary); font-size: 0.875rem;">← Kembali ke
+                    beranda</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/api.js"></script>
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            const btn = e.target.querySelector('button[type="submit"]');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner" style="width:20px;height:20px;border-width:2px;"></span>';
+
+            try {
+                const result = await API.login(email, password);
+
+                if (result.success) {
+                    // Redirect based on role
+                    if (result.user.role === 'admin') {
+                        window.location.href = '../admin/index.html';
+                    } else {
+                        window.location.href = '../client/dashboard.html';
+                    }
+                } else {
+                    alert(result.message);
+                }
+            } catch (error) {
+                alert(error.message || 'Terjadi kesalahan. Silakan coba lagi.');
+            }
+
+            btn.disabled = false;
+            btn.textContent = 'Masuk';
+        });
+
+        // Check if already logged in
+        if (API.isLoggedIn()) {
+            if (API.isAdmin()) {
+                window.location.href = '../admin/index.html';
+            } else {
+                window.location.href = '../client/dashboard.html';
+            }
+        }
+    </script>
+</body>
+
+</html>

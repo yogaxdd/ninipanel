@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Server Saya - NiniPanel</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../styles.css">
+  <style>
+    .server-card {
+      margin-bottom: var(--spacing-lg);
+    }
+
+    .server-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--spacing-lg);
+      padding-bottom: var(--spacing-lg);
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .server-info {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-lg);
+    }
+
+    .server-icon {
+      width: 60px;
+      height: 60px;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      border-radius: var(--radius-lg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+    }
+
+    .server-actions {
+      display: flex;
+      gap: var(--spacing-sm);
+    }
+
+    .specs-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: var(--spacing-md);
+      margin-bottom: var(--spacing-lg);
+    }
+
+    .spec-item {
+      background: var(--glass-bg);
+      padding: var(--spacing-md);
+      border-radius: var(--radius-md);
+    }
+
+    .spec-item .label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+
+    .spec-item .value {
+      font-weight: 600;
+    }
+
+    .usage-bar {
+      margin-bottom: var(--spacing-md);
+    }
+
+    .usage-bar .header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: var(--spacing-sm);
+      font-size: 0.875rem;
+    }
+
+    .usage-bar .label {
+      color: var(--text-secondary);
+    }
+  </style>
+</head>
+
+<body>
+  <div class="dashboard-layout">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <a href="../index.html" class="sidebar-brand">
+        <span>🚀</span>
+        <span class="text-gradient">NiniPanel</span>
+      </a>
+
+      <ul class="sidebar-menu">
+        <li><a href="dashboard.html">📊 Dashboard</a></li>
+        <li><a href="servers.html" class="active">🖥️ Server Saya</a></li>
+        <li><a href="console.html">💻 Console</a></li>
+        <li><a href="files.html">📁 File Manager</a></li>
+        <li><a href="startup.html">⚙️ Startup</a></li>
+        <li><a href="backups.html">💾 Backups</a></li>
+      </ul>
+
+      <div class="sidebar-section">
+        <div class="sidebar-section-title">Akun</div>
+        <ul class="sidebar-menu">
+          <li><a href="billing.html">💳 Billing</a></li>
+          <li><a href="support.html">🎫 Support</a></li>
+          <li><a href="#" onclick="Auth.logout()">🚪 Logout</a></li>
+        </ul>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <div class="page-header">
+        <div class="d-flex justify-between align-center">
+          <div>
+            <h1>Server Saya</h1>
+            <p>Kelola semua VPS Anda di sini</p>
+          </div>
+          <a href="../order.html" class="btn btn-primary">+ Order VPS Baru</a>
+        </div>
+      </div>
+
+      <div id="serversList">
+        <div class="card" style="text-align: center; padding: var(--spacing-3xl);">
+          <div style="font-size: 4rem; margin-bottom: var(--spacing-lg);">🖥️</div>
+          <h3 style="margin-bottom: var(--spacing-sm);">Belum Ada Server</h3>
+          <p style="color: var(--text-secondary); margin-bottom: var(--spacing-xl);">Anda belum memiliki VPS
+            aktif. Order sekarang untuk memulai!</p>
+          <a href="../order.html" class="btn btn-primary btn-lg">Order VPS Sekarang</a>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="../js/storage.js"></script>
+  <script src="../js/auth.js"></script>
+  <script>
+    // Check login
+    if (!Auth.requireLogin()) {
+      // Redirect handled by requireLogin
+    }
+
+    const user = Auth.getCurrentUser();
+
+    // Load servers
+    function loadServers() {
+      const servers = Storage.getServersByUser(user.id);
+      const serversList = document.getElementById('serversList');
+
+      if (servers.length === 0) {
+        return;
+      }
+
+      serversList.innerHTML = servers.map(server => {
+        const statusClass = server.status === 'online' ? 'online' :
+          server.status === 'starting' ? 'starting' : 'offline';
+        const statusText = server.status === 'online' ? 'Online' :
+          server.status === 'starting' ? 'Starting...' : 'Offline';
+
+        // Simulate random usage
+        const ramUsage = Math.floor(Math.random() * 70) + 10;
+        const diskUsage = Math.floor(Math.random() * 50) + 10;
+        const cpuUsage = Math.floor(Math.random() * 60) + 5;
+
+        return `
+          <div class="card server-card">
+            <div class="server-header">
+              <div class="server-info">
+                <div class="server-icon">🖥️</div>
+                <div>
+                  <h3 style="margin-bottom: 4px;">${server.name || 'VPS-' + server.id.substring(0, 6).toUpperCase()}</h3>
+                  <div class="vps-status ${statusClass}">
+                    <span class="dot"></span>
+                    <span>${statusText}</span>
+                  </div>
+                </div>
+              </div>
+              <div class="server-actions">
+                ${server.status === 'online' ? `
+                  <button class="btn btn-warning btn-sm" onclick="restartServer('${server.id}')">🔄 Restart</button>
+                  <button class="btn btn-danger btn-sm" onclick="stopServer('${server.id}')">⏹️ Stop</button>
+                ` : `
+                  <button class="btn btn-success btn-sm" onclick="startServer('${server.id}')">▶️ Start</button>
+                `}
+                <a href="console.html?server=${server.id}" class="btn btn-primary btn-sm">💻 Console</a>
+              </div>
+            </div>
+            
+            <div class="specs-grid">
+              <div class="spec-item">
+                <div class="label">Paket</div>
+                <div class="value">${server.planName}</div>
+              </div>
+              <div class="spec-item">
+                <div class="label">RAM</div>
+                <div class="value">${server.ram}MB</div>
+              </div>
+              <div class="spec-item">
+                <div class="label">Storage</div>
+                <div class="value">${server.disk >= 1024 ? (server.disk / 1024) + 'GB' : server.disk + 'MB'}</div>
+              </div>
+              <div class="spec-item">
+                <div class="label">CPU</div>
+                <div class="value">${server.cpu} Core</div>
+              </div>
+              <div class="spec-item">
+                <div class="label">IP Address</div>
+                <div class="value">${server.ip || '192.168.1.' + Math.floor(Math.random() * 254 + 1)}</div>
+              </div>
+              <div class="spec-item">
+                <div class="label">Expires</div>
+                <div class="value">${new Date(server.expiresAt).toLocaleDateString('id-ID')}</div>
+              </div>
+            </div>
+            
+            <h4 style="margin-bottom: var(--spacing-md);">Resource Usage</h4>
+            
+            <div class="usage-bar">
+              <div class="header">
+                <span class="label">RAM Usage</span>
+                <span>${ramUsage}%</span>
+              </div>
+              <div class="progress">
+                <div class="progress-bar ${ramUsage > 80 ? 'danger' : ramUsage > 60 ? 'warning' : ''}" style="width: ${ramUsage}%"></div>
+              </div>
+            </div>
+            
+            <div class="usage-bar">
+              <div class="header">
+                <span class="label">Disk Usage</span>
+                <span>${diskUsage}%</span>
+              </div>
+              <div class="progress">
+                <div class="progress-bar ${diskUsage > 80 ? 'danger' : diskUsage > 60 ? 'warning' : ''}" style="width: ${diskUsage}%"></div>
+              </div>
+            </div>
+            
+            <div class="usage-bar">
+              <div class="header">
+                <span class="label">CPU Usage</span>
+                <span>${cpuUsage}%</span>
+              </div>
+              <div class="progress">
+                <div class="progress-bar ${cpuUsage > 80 ? 'danger' : cpuUsage > 60 ? 'warning' : ''}" style="width: ${cpuUsage}%"></div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function startServer(id) {
+      Storage.updateServer(id, { status: 'starting' });
+      loadServers();
+
+      // Simulate startup delay
+      setTimeout(() => {
+        Storage.updateServer(id, { status: 'online' });
+        loadServers();
+      }, 2000);
+    }
+
+    function stopServer(id) {
+      if (confirm('Yakin ingin menghentikan server?')) {
+        Storage.updateServer(id, { status: 'offline' });
+        loadServers();
+      }
+    }
+
+    function restartServer(id) {
+      Storage.updateServer(id, { status: 'starting' });
+      loadServers();
+
+      setTimeout(() => {
+        Storage.updateServer(id, { status: 'online' });
+        loadServers();
+      }, 3000);
+    }
+
+    loadServers();
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - NiniPanel</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../styles.css">
+</head>
+
+<body>
+    <div class="dashboard-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <a href="../index.html" class="sidebar-brand">
+                <span>🚀</span>
+                <span class="text-gradient">NiniPanel</span>
+            </a>
+
+            <ul class="sidebar-menu">
+                <li><a href="dashboard.html" class="active">📊 Dashboard</a></li>
+                <li><a href="servers.html">🖥️ Server Saya</a></li>
+                <li><a href="console.html">💻 Console</a></li>
+                <li><a href="files.html">📁 File Manager</a></li>
+                <li><a href="startup.html">⚙️ Startup</a></li>
+                <li><a href="backups.html">💾 Backups</a></li>
+            </ul>
+
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">Akun</div>
+                <ul class="sidebar-menu">
+                    <li><a href="billing.html">💳 Billing</a></li>
+                    <li><a href="support.html">🎫 Support</a></li>
+                    <li><a href="#" onclick="Auth.logout()">🚪 Logout</a></li>
+                </ul>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="page-header">
+                <h1>Dashboard</h1>
+                <p>Selamat datang kembali, <span id="userName">User</span>!</p>
+            </div>
+
+            <!-- Stats -->
+            <div class="stats-grid">
+                <div class="card stat-card">
+                    <div class="stat-icon" style="background: rgba(99, 102, 241, 0.1); color: var(--primary);">🖥️</div>
+                    <div class="stat-value" id="totalServers">0</div>
+                    <div class="stat-label">Total Server</div>
+                </div>
+
+                <div class="card stat-card">
+                    <div class="stat-icon" style="background: rgba(16, 185, 129, 0.1); color: var(--success);">✅</div>
+                    <div class="stat-value" id="activeServers">0</div>
+                    <div class="stat-label">Server Aktif</div>
+                </div>
+
+                <div class="card stat-card">
+                    <div class="stat-icon" style="background: rgba(245, 158, 11, 0.1); color: var(--warning);">⏳</div>
+                    <div class="stat-value" id="pendingOrders">0</div>
+                    <div class="stat-label">Order Pending</div>
+                </div>
+
+                <div class="card stat-card">
+                    <div class="stat-icon" style="background: rgba(244, 114, 182, 0.1); color: var(--accent);">🎫</div>
+                    <div class="stat-value" id="openTickets">0</div>
+                    <div class="stat-label">Tiket Terbuka</div>
+                </div>
+            </div>
+
+            <!-- Servers -->
+            <div class="card" style="margin-bottom: var(--spacing-xl);">
+                <div class="d-flex justify-between align-center" style="margin-bottom: var(--spacing-lg);">
+                    <h3>Server Saya</h3>
+                    <a href="../order.html" class="btn btn-primary btn-sm">+ Order VPS Baru</a>
+                </div>
+
+                <div id="serversList">
+                    <div style="text-align: center; padding: var(--spacing-2xl); color: var(--text-secondary);">
+                        <div style="font-size: 3rem; margin-bottom: var(--spacing-md);">🖥️</div>
+                        <p>Anda belum memiliki server aktif.</p>
+                        <a href="../order.html" class="btn btn-primary" style="margin-top: var(--spacing-md);">Order VPS
+                            Sekarang</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="card">
+                <h3 style="margin-bottom: var(--spacing-lg);">Aktivitas Terakhir</h3>
+
+                <div id="activityList">
+                    <div style="text-align: center; padding: var(--spacing-xl); color: var(--text-secondary);">
+                        <p>Belum ada aktivitas.</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/storage.js"></script>
+    <script src="../js/auth.js"></script>
+    <script>
+        // Check login
+        if (!Auth.requireLogin()) {
+            // Redirect handled by requireLogin
+        }
+
+        const user = Auth.getCurrentUser();
+        document.getElementById('userName').textContent = user.name;
+
+        // Load data
+        function loadDashboard() {
+            const servers = Storage.getServersByUser(user.id);
+            const orders = Storage.getOrdersByUser(user.id);
+            const tickets = Storage.getTicketsByUser(user.id);
+
+            // Stats
+            document.getElementById('totalServers').textContent = servers.length;
+            document.getElementById('activeServers').textContent = servers.filter(s => s.status === 'online').length;
+            document.getElementById('pendingOrders').textContent = orders.filter(o => o.status === 'pending' || o.status === 'pending_verification').length;
+            document.getElementById('openTickets').textContent = tickets.filter(t => t.status === 'open').length;
+
+            // Servers list
+            const serversList = document.getElementById('serversList');
+            if (servers.length > 0) {
+                serversList.innerHTML = servers.map(server => `
+          <div class="d-flex justify-between align-center" style="padding: var(--spacing-md); background: var(--glass-bg); border-radius: var(--radius-md); margin-bottom: var(--spacing-sm);">
+            <div class="d-flex align-center gap-1">
+              <div class="vps-status ${server.status}">
+                <span class="dot"></span>
+              </div>
+              <div>
+                <div style="font-weight: 600;">${server.name || 'VPS-' + server.id.substring(0, 6).toUpperCase()}</div>
+                <div style="font-size: 0.75rem; color: var(--text-secondary);">${server.planName} • ${server.ram}MB RAM</div>
+              </div>
+            </div>
+            <div class="d-flex gap-1">
+              <a href="console.html?server=${server.id}" class="btn btn-secondary btn-sm">Console</a>
+              <a href="servers.html?server=${server.id}" class="btn btn-secondary btn-sm">Manage</a>
+            </div>
+          </div>
+        `).join('');
+            }
+
+            // Activity
+            const activityList = document.getElementById('activityList');
+            const activities = [
+                ...orders.map(o => ({ type: 'order', date: o.createdAt, data: o })),
+                ...servers.map(s => ({ type: 'server', date: s.createdAt, data: s }))
+            ].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 5);
+
+            if (activities.length > 0) {
+                activityList.innerHTML = activities.map(act => {
+                    const date = new Date(act.date).toLocaleDateString('id-ID', {
+                        day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+                    });
+
+                    if (act.type === 'order') {
+                        const statusBadge = {
+                            pending: '<span class="badge badge-warning">Pending</span>',
+                            pending_verification: '<span class="badge badge-warning">Verifikasi</span>',
+                            paid: '<span class="badge badge-success">Dibayar</span>',
+                            active: '<span class="badge badge-success">Aktif</span>',
+                            expired: '<span class="badge badge-danger">Expired</span>'
+                        };
+
+                        return `
+              <div class="d-flex justify-between align-center" style="padding: var(--spacing-sm) 0; border-bottom: 1px solid var(--border-color);">
+                <div>
+                  <span style="font-weight: 500;">Order ${act.data.planName}</span>
+                  ${statusBadge[act.data.status] || ''}
+                </div>
+                <div style="font-size: 0.75rem; color: var(--text-muted);">${date}</div>
+              </div>
+            `;
+                    } else {
+                        return `
+              <div class="d-flex justify-between align-center" style="padding: var(--spacing-sm) 0; border-bottom: 1px solid var(--border-color);">
+                <div>
+                  <span style="font-weight: 500;">Server ${act.data.name || 'VPS'} dibuat</span>
+                </div>
+                <div style="font-size: 0.75rem; color: var(--text-muted);">${date}</div>
+              </div>
+            `;
+                    }
+                }).join('');
+            }
+        }
+
+        loadDashboard();
+    </script>
+</body>
+
+</html>

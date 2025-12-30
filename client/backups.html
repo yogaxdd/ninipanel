@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Backups - NiniPanel</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../styles.css">
+    <style>
+        .backup-card {
+            display: grid;
+            grid-template-columns: 1fr auto auto auto auto;
+            gap: var(--spacing-lg);
+            align-items: center;
+            padding: var(--spacing-lg);
+            background: var(--glass-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            margin-bottom: var(--spacing-md);
+            transition: all var(--transition-fast);
+        }
+
+        .backup-card:hover {
+            border-color: var(--primary);
+        }
+
+        @media (max-width: 768px) {
+            .backup-card {
+                grid-template-columns: 1fr;
+                text-align: center;
+            }
+        }
+
+        .backup-info h4 {
+            margin: 0 0 var(--spacing-xs);
+            font-weight: 600;
+        }
+
+        .backup-info p {
+            margin: 0;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .backup-size {
+            font-family: var(--font-mono);
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .backup-date {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+        }
+
+        .backup-status {
+            padding: var(--spacing-xs) var(--spacing-sm);
+            border-radius: var(--radius-sm);
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .backup-status.completed {
+            background: rgba(34, 197, 94, 0.1);
+            color: var(--success);
+        }
+
+        .backup-status.creating {
+            background: rgba(251, 191, 36, 0.1);
+            color: var(--warning);
+        }
+
+        .backup-status.failed {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
+        }
+
+        .backup-actions {
+            display: flex;
+            gap: var(--spacing-sm);
+        }
+
+        .backup-actions button {
+            padding: var(--spacing-sm) var(--spacing-md);
+            border-radius: var(--radius-sm);
+            border: none;
+            cursor: pointer;
+            font-size: 0.875rem;
+            transition: all var(--transition-fast);
+        }
+
+        .btn-download {
+            background: rgba(59, 130, 246, 0.1);
+            color: var(--info);
+        }
+
+        .btn-restore {
+            background: rgba(34, 197, 94, 0.1);
+            color: var(--success);
+        }
+
+        .btn-delete {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
+        }
+
+        .backup-actions button:hover {
+            opacity: 0.8;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: var(--spacing-3xl);
+        }
+
+        .create-backup-section {
+            background: var(--glass-bg);
+            border: 1px dashed var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-xl);
+            text-align: center;
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .server-tab {
+            padding: var(--spacing-sm) var(--spacing-lg);
+            background: var(--glass-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            transition: all var(--transition-fast);
+        }
+
+        .server-tab:hover {
+            border-color: var(--primary);
+        }
+
+        .server-tab.active {
+            background: rgba(99, 102, 241, 0.1);
+            border-color: var(--primary);
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: var(--border-color);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: var(--spacing-sm);
+        }
+
+        .progress-bar .progress {
+            height: 100%;
+            background: var(--primary);
+            animation: progress 2s ease-in-out infinite;
+        }
+
+        @keyframes progress {
+            0% {
+                width: 0%;
+            }
+
+            50% {
+                width: 70%;
+            }
+
+            100% {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="dashboard-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <a href="../index.html" class="sidebar-brand">
+                <span>🚀</span>
+                <span class="text-gradient">NiniPanel</span>
+            </a>
+
+            <ul class="sidebar-menu">
+                <li><a href="dashboard.html">📊 Dashboard</a></li>
+                <li><a href="servers.html">🖥️ Server Saya</a></li>
+                <li><a href="console.html">💻 Console</a></li>
+                <li><a href="files.html">📁 File Manager</a></li>
+                <li><a href="startup.html">⚙️ Startup</a></li>
+                <li><a href="backups.html" class="active">💾 Backups</a></li>
+            </ul>
+
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">Akun</div>
+                <ul class="sidebar-menu">
+                    <li><a href="billing.html">💳 Billing</a></li>
+                    <li><a href="support.html">🎫 Support</a></li>
+                    <li><a href="#" onclick="Auth.logout()">🚪 Logout</a></li>
+                </ul>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="page-header">
+                <h1>💾 Backups</h1>
+                <p>Kelola backup untuk VPS Anda</p>
+            </div>
+
+            <div class="server-selector" id="serverSelector"
+                style="display: flex; gap: var(--spacing-md); margin-bottom: var(--spacing-lg); flex-wrap: wrap;">
+                <div style="color: var(--text-secondary);">Pilih server:</div>
+            </div>
+
+            <div id="backupsContainer">
+                <div class="card" style="text-align: center; padding: var(--spacing-3xl);">
+                    <div style="font-size: 4rem; margin-bottom: var(--spacing-lg);">💾</div>
+                    <h3 style="margin-bottom: var(--spacing-sm);">Tidak Ada Server</h3>
+                    <p style="color: var(--text-secondary);">Anda belum memiliki VPS aktif.</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/storage.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/api.js"></script>
+    <script>
+        // Check login
+        if (!Auth.requireLogin()) {
+            // Redirect handled by requireLogin
+        }
+
+        const user = Auth.getCurrentUser();
+        let selectedServer = null;
+        let backups = [];
+
+        // Load servers
+        function loadServers() {
+            const servers = Storage.getServersByUser(user.id);
+            const selector = document.getElementById('serverSelector');
+
+            if (servers.length === 0) return;
+
+            selector.innerHTML = '<div style="color: var(--text-secondary);">Pilih server:</div>' +
+                servers.map(server => `
+                <div class="server-tab" data-server="${server.id}">
+                    <span class="vps-status ${server.status}"><span class="dot"></span></span>
+                    <span>${server.name || 'VPS-' + server.id.substring(0, 6).toUpperCase()}</span>
+                </div>
+            `).join('');
+
+            selector.querySelectorAll('.server-tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    selector.querySelectorAll('.server-tab').forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    selectedServer = servers.find(s => s.id === tab.dataset.server);
+                    loadBackups();
+                });
+            });
+
+            // Auto-select first
+            if (servers[0]) {
+                selectedServer = servers[0];
+                selector.querySelector('.server-tab').classList.add('active');
+                loadBackups();
+            }
+        }
+
+        async function loadBackups() {
+            if (!selectedServer) return;
+
+            // Try to load from API
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`/api/backups/server/${selectedServer.id}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await response.json();
+                if (data.success) {
+                    backups = data.backups || [];
+                }
+            } catch (err) {
+                console.log('Using local storage for backups');
+                backups = JSON.parse(localStorage.getItem(`backups_${selectedServer.id}`) || '[]');
+            }
+
+            renderBackups();
+        }
+
+        function renderBackups() {
+            const container = document.getElementById('backupsContainer');
+
+            container.innerHTML = `
+                <div class="create-backup-section">
+                    <div style="font-size: 2.5rem; margin-bottom: var(--spacing-md);">💾</div>
+                    <h3 style="margin-bottom: var(--spacing-sm);">Create New Backup</h3>
+                    <p style="color: var(--text-secondary); margin-bottom: var(--spacing-lg);">
+                        Buat backup untuk menyimpan data server Anda. Backup akan menyimpan semua file di container.
+                    </p>
+                    <div style="display: flex; gap: var(--spacing-md); justify-content: center; flex-wrap: wrap;">
+                        <input type="text" id="backupName" placeholder="Nama backup (opsional)" 
+                            style="padding: var(--spacing-sm) var(--spacing-md); background: var(--bg-dark); border: 1px solid var(--border-color); border-radius: var(--radius-md); color: var(--text-primary); width: 250px;">
+                        <button class="btn btn-primary" onclick="createBackup()">
+                            ➕ Create Backup
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3 style="margin-bottom: var(--spacing-lg);">📦 Backup List</h3>
+                    
+                    ${backups.length === 0 ? `
+                        <div class="empty-state">
+                            <div style="font-size: 3rem; margin-bottom: var(--spacing-md);">📭</div>
+                            <h4 style="color: var(--text-secondary);">Belum ada backup</h4>
+                            <p style="color: var(--text-muted); font-size: 0.875rem;">
+                                Buat backup pertama Anda untuk melindungi data server.
+                            </p>
+                        </div>
+                    ` : backups.map(backup => `
+                        <div class="backup-card">
+                            <div class="backup-info">
+                                <h4>💾 ${escapeHtml(backup.name)}</h4>
+                                <p>ID: ${backup.id.substring(0, 8)}...</p>
+                            </div>
+                            <div class="backup-size">${formatSize(backup.size)}</div>
+                            <div class="backup-date">${formatDate(backup.createdAt)}</div>
+                            <span class="backup-status ${backup.status}">${backup.status}</span>
+                            <div class="backup-actions">
+                                <button class="btn-download" onclick="downloadBackup('${backup.id}')" ${backup.status !== 'completed' ? 'disabled' : ''}>
+                                    ⬇️ Download
+                                </button>
+                                <button class="btn-restore" onclick="restoreBackup('${backup.id}')" ${backup.status !== 'completed' ? 'disabled' : ''}>
+                                    🔄 Restore
+                                </button>
+                                <button class="btn-delete" onclick="deleteBackup('${backup.id}')">
+                                    🗑️
+                                </button>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        async function createBackup() {
+            if (!selectedServer) return;
+
+            const name = document.getElementById('backupName').value || `Backup ${new Date().toLocaleDateString('id-ID')}`;
+
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`/api/backups/server/${selectedServer.id}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ name })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    alert('✅ Backup created successfully!');
+                    loadBackups();
+                } else {
+                    alert('❌ Error: ' + data.message);
+                }
+            } catch (err) {
+                // Simulation mode
+                const newBackup = {
+                    id: 'backup-' + Date.now(),
+                    serverId: selectedServer.id,
+                    name: name,
+                    size: Math.floor(Math.random() * 50 + 10) * 1024 * 1024,
+                    status: 'completed',
+                    createdAt: new Date().toISOString()
+                };
+                backups.unshift(newBackup);
+                localStorage.setItem(`backups_${selectedServer.id}`, JSON.stringify(backups));
+                alert('✅ Backup created! (Simulation mode)');
+                renderBackups();
+            }
+
+            document.getElementById('backupName').value = '';
+        }
+
+        async function downloadBackup(backupId) {
+            try {
+                const token = localStorage.getItem('token');
+                window.open(`/api/backups/${backupId}/download?token=${token}`, '_blank');
+            } catch (err) {
+                alert('ℹ️ Simulation mode - no actual file to download');
+            }
+        }
+
+        async function restoreBackup(backupId) {
+            if (!confirm('⚠️ Are you sure you want to restore this backup? Current files will be overwritten.')) {
+                return;
+            }
+
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`/api/backups/${backupId}/restore`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    alert('✅ Backup restored successfully!');
+                } else {
+                    alert('❌ Error: ' + data.message);
+                }
+            } catch (err) {
+                alert('✅ Backup restored! (Simulation mode)');
+            }
+        }
+
+        async function deleteBackup(backupId) {
+            if (!confirm('⚠️ Are you sure you want to delete this backup? This cannot be undone.')) {
+                return;
+            }
+
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`/api/backups/${backupId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    alert('✅ Backup deleted!');
+                    loadBackups();
+                } else {
+                    alert('❌ Error: ' + data.message);
+                }
+            } catch (err) {
+                // Simulation mode
+                backups = backups.filter(b => b.id !== backupId);
+                localStorage.setItem(`backups_${selectedServer.id}`, JSON.stringify(backups));
+                alert('✅ Backup deleted! (Simulation mode)');
+                renderBackups();
+            }
+        }
+
+        function formatSize(bytes) {
+            if (!bytes) return '0 B';
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(1024));
+            return (bytes / Math.pow(1024, i)).toFixed(2) + ' ' + sizes[i];
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return '-';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('id-ID', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        loadServers();
+    </script>
+</body>
+
+</html>

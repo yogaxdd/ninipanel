@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - NiniPanel</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../styles.css">
+</head>
+
+<body>
+    <div class="dashboard-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <a href="../index.html" class="sidebar-brand">
+                <span>🚀</span>
+                <span class="text-gradient">NiniPanel</span>
+            </a>
+
+            <div
+                style="padding: var(--spacing-sm) var(--spacing-md); background: rgba(239, 68, 68, 0.1); border-radius: var(--radius-md); margin-bottom: var(--spacing-lg);">
+                <span style="color: var(--danger); font-weight: 600; font-size: 0.75rem;">👑 ADMIN PANEL</span>
+            </div>
+
+            <ul class="sidebar-menu">
+                <li><a href="index.html" class="active">📊 Dashboard</a></li>
+                <li><a href="orders.html">📦 Orders</a></li>
+                <li><a href="users.html">👥 Users</a></li>
+                <li><a href="servers.html">🖥️ Servers</a></li>
+                <li><a href="tickets.html">🎫 Tickets</a></li>
+                <li><a href="settings.html">⚙️ Settings</a></li>
+            </ul>
+
+            <div class="sidebar-section">
+                <ul class="sidebar-menu">
+                    <li><a href="../index.html">🌐 View Site</a></li>
+                    <li><a href="#" onclick="Auth.logout()">🚪 Logout</a></li>
+                </ul>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="page-header">
+                <h1>Admin Dashboard</h1>
+                <p>Overview panel NiniPanel</p>
+            </div>
+
+            <!-- Stats -->
+            <div class="stats-grid">
+                <div class="card stat-card">
+                    <div class="stat-icon" style="background: rgba(99, 102, 241, 0.1); color: var(--primary);">👥</div>
+                    <div class="stat-value" id="totalUsers">0</div>
+                    <div class="stat-label">Total Users</div>
+                </div>
+
+                <div class="card stat-card">
+                    <div class="stat-icon" style="background: rgba(16, 185, 129, 0.1); color: var(--success);">🖥️</div>
+                    <div class="stat-value" id="activeServers">0</div>
+                    <div class="stat-label">Server Aktif</div>
+                </div>
+
+                <div class="card stat-card">
+                    <div class="stat-icon" style="background: rgba(245, 158, 11, 0.1); color: var(--warning);">⏳</div>
+                    <div class="stat-value" id="pendingOrders">0</div>
+                    <div class="stat-label">Pending Orders</div>
+                </div>
+
+                <div class="card stat-card">
+                    <div class="stat-icon" style="background: rgba(244, 114, 182, 0.1); color: var(--accent);">💰</div>
+                    <div class="stat-value" id="totalRevenue">Rp 0</div>
+                    <div class="stat-label">Total Revenue</div>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-xl);">
+                <!-- Pending Orders -->
+                <div class="card">
+                    <div class="d-flex justify-between align-center" style="margin-bottom: var(--spacing-lg);">
+                        <h3>🔔 Pending Verification</h3>
+                        <a href="orders.html" class="btn btn-secondary btn-sm">View All</a>
+                    </div>
+
+                    <div id="pendingOrdersList">
+                        <div style="text-align: center; padding: var(--spacing-xl); color: var(--text-secondary);">
+                            Tidak ada order pending.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Tickets -->
+                <div class="card">
+                    <div class="d-flex justify-between align-center" style="margin-bottom: var(--spacing-lg);">
+                        <h3>🎫 Recent Tickets</h3>
+                        <a href="tickets.html" class="btn btn-secondary btn-sm">View All</a>
+                    </div>
+
+                    <div id="recentTicketsList">
+                        <div style="text-align: center; padding: var(--spacing-xl); color: var(--text-secondary);">
+                            Tidak ada tiket terbaru.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/storage.js"></script>
+    <script src="../js/auth.js"></script>
+    <script>
+        // Check admin
+        if (!Auth.requireAdmin()) {
+            // Redirect handled by requireAdmin
+        }
+
+        // Load dashboard
+        function loadDashboard() {
+            const stats = Storage.getStats();
+            const orders = Storage.getOrders();
+            const tickets = Storage.getTickets();
+
+            // Stats
+            document.getElementById('totalUsers').textContent = stats.totalUsers;
+            document.getElementById('activeServers').textContent = stats.activeServers;
+            document.getElementById('pendingOrders').textContent = stats.pendingOrders;
+            document.getElementById('totalRevenue').textContent = `Rp ${stats.totalRevenue.toLocaleString('id-ID')}`;
+
+            // Pending orders
+            const pendingOrders = orders.filter(o => o.status === 'pending_verification');
+            const pendingList = document.getElementById('pendingOrdersList');
+
+            if (pendingOrders.length > 0) {
+                pendingList.innerHTML = pendingOrders.slice(0, 5).map(order => `
+          <div class="d-flex justify-between align-center" style="padding: var(--spacing-sm) 0; border-bottom: 1px solid var(--border-color);">
+            <div>
+              <div style="font-weight: 500;">${order.customerName}</div>
+              <div style="font-size: 0.75rem; color: var(--text-secondary);">${order.planName} - Rp ${order.amount.toLocaleString('id-ID')}</div>
+            </div>
+            <a href="orders.html?verify=${order.id}" class="btn btn-success btn-sm">Verify</a>
+          </div>
+        `).join('');
+            }
+
+            // Recent tickets
+            const openTickets = tickets.filter(t => t.status === 'open');
+            const ticketsList = document.getElementById('recentTicketsList');
+
+            if (openTickets.length > 0) {
+                ticketsList.innerHTML = openTickets.slice(0, 5).map(ticket => `
+          <div style="padding: var(--spacing-sm) 0; border-bottom: 1px solid var(--border-color);">
+            <div style="font-weight: 500;">${ticket.subject}</div>
+            <div style="font-size: 0.75rem; color: var(--text-secondary);">${new Date(ticket.createdAt).toLocaleDateString('id-ID')}</div>
+          </div>
+        `).join('');
+            }
+        }
+
+        loadDashboard();
+    </script>
+</body>
+
+</html>

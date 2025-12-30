@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daftar - NiniPanel</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../styles.css">
+    <style>
+        .auth-page {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: var(--spacing-xl);
+        }
+
+        .auth-container {
+            width: 100%;
+            max-width: 420px;
+        }
+
+        .auth-header {
+            text-align: center;
+            margin-bottom: var(--spacing-2xl);
+        }
+
+        .auth-header .logo {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            font-size: 1.5rem;
+            font-weight: 800;
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .auth-header h1 {
+            font-size: 1.75rem;
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .auth-header p {
+            color: var(--text-secondary);
+        }
+
+        .auth-card {
+            padding: var(--spacing-2xl);
+        }
+
+        .auth-footer {
+            text-align: center;
+            margin-top: var(--spacing-xl);
+            color: var(--text-secondary);
+        }
+
+        .auth-footer a {
+            color: var(--primary-light);
+            font-weight: 500;
+        }
+
+        .password-strength {
+            height: 4px;
+            background: var(--bg-tertiary);
+            border-radius: 2px;
+            margin-top: var(--spacing-sm);
+            overflow: hidden;
+        }
+
+        .password-strength-bar {
+            height: 100%;
+            width: 0;
+            transition: all 0.3s ease;
+        }
+
+        .password-strength-bar.weak {
+            width: 33%;
+            background: var(--danger);
+        }
+
+        .password-strength-bar.medium {
+            width: 66%;
+            background: var(--warning);
+        }
+
+        .password-strength-bar.strong {
+            width: 100%;
+            background: var(--success);
+        }
+
+        .terms-row {
+            display: flex;
+            align-items: flex-start;
+            gap: var(--spacing-sm);
+            margin-bottom: var(--spacing-lg);
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .terms-row input {
+            margin-top: 4px;
+        }
+
+        .terms-row a {
+            color: var(--primary-light);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="auth-page">
+        <div class="auth-container">
+            <div class="auth-header">
+                <a href="../index.html" class="logo">
+                    <span>🚀</span>
+                    <span class="text-gradient">NiniPanel</span>
+                </a>
+                <h1>Buat Akun Baru</h1>
+                <p>Daftar untuk mulai menggunakan layanan VPS</p>
+            </div>
+
+            <div class="card auth-card">
+                <form id="registerForm">
+                    <div class="form-group">
+                        <label class="form-label">Nama Lengkap</label>
+                        <input type="text" class="form-input" id="name" placeholder="John Doe" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Email</label>
+                        <input type="email" class="form-input" id="email" placeholder="nama@email.com" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">WhatsApp</label>
+                        <input type="tel" class="form-input" id="phone" placeholder="08123456789" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Password</label>
+                        <input type="password" class="form-input" id="password" placeholder="Min. 8 karakter" required
+                            minlength="8">
+                        <div class="password-strength">
+                            <div class="password-strength-bar" id="strengthBar"></div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Konfirmasi Password</label>
+                        <input type="password" class="form-input" id="confirmPassword" placeholder="Ulangi password"
+                            required>
+                    </div>
+
+                    <div class="terms-row">
+                        <input type="checkbox" id="terms" required>
+                        <label for="terms">
+                            Saya setuju dengan <a href="#">Syarat & Ketentuan</a> dan <a href="#">Kebijakan Privasi</a>
+                        </label>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">Daftar</button>
+                </form>
+
+                <div class="auth-footer">
+                    Sudah punya akun? <a href="login.html">Masuk</a>
+                </div>
+            </div>
+
+            <div style="text-align: center; margin-top: var(--spacing-xl);">
+                <a href="../index.html" style="color: var(--text-secondary); font-size: 0.875rem;">← Kembali ke
+                    beranda</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/api.js"></script>
+    <script>
+        // Password strength indicator
+        const passwordInput = document.getElementById('password');
+        const strengthBar = document.getElementById('strengthBar');
+
+        passwordInput.addEventListener('input', (e) => {
+            const password = e.target.value;
+            let strength = 0;
+
+            if (password.length >= 8) strength++;
+            if (/[A-Z]/.test(password)) strength++;
+            if (/[0-9]/.test(password)) strength++;
+            if (/[^A-Za-z0-9]/.test(password)) strength++;
+
+            strengthBar.className = 'password-strength-bar';
+            if (strength >= 3) {
+                strengthBar.classList.add('strong');
+            } else if (strength >= 2) {
+                strengthBar.classList.add('medium');
+            } else if (strength >= 1) {
+                strengthBar.classList.add('weak');
+            }
+        });
+
+        // Form submit
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const name = document.getElementById('name').value;
+            const email = document.getElementById('email').value;
+            const phone = document.getElementById('phone').value;
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            if (password !== confirmPassword) {
+                alert('Password tidak cocok!');
+                return;
+            }
+
+            const btn = e.target.querySelector('button[type="submit"]');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner" style="width:20px;height:20px;border-width:2px;"></span>';
+
+            try {
+                const result = await API.register({ name, email, phone, password });
+
+                if (result.success) {
+                    alert('Registrasi berhasil!');
+                    window.location.href = '../client/dashboard.html';
+                } else {
+                    alert(result.message);
+                }
+            } catch (error) {
+                alert(error.message || 'Terjadi kesalahan. Silakan coba lagi.');
+            }
+
+            btn.disabled = false;
+            btn.textContent = 'Daftar';
+        });
+
+        // Check if already logged in
+        if (API.isLoggedIn()) {
+            window.location.href = '../client/dashboard.html';
+        }
+    </script>
+</body>
+
+</html>

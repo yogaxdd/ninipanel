@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - NiniPanel Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../styles.css">
+</head>
+
+<body>
+    <div class="dashboard-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <a href="../index.html" class="sidebar-brand">
+                <span>🚀</span>
+                <span class="text-gradient">NiniPanel</span>
+            </a>
+
+            <div
+                style="padding: var(--spacing-sm) var(--spacing-md); background: rgba(239, 68, 68, 0.1); border-radius: var(--radius-md); margin-bottom: var(--spacing-lg);">
+                <span style="color: var(--danger); font-weight: 600; font-size: 0.75rem;">👑 ADMIN PANEL</span>
+            </div>
+
+            <ul class="sidebar-menu">
+                <li><a href="index.html">📊 Dashboard</a></li>
+                <li><a href="orders.html">📦 Orders</a></li>
+                <li><a href="users.html">👥 Users</a></li>
+                <li><a href="servers.html">🖥️ Servers</a></li>
+                <li><a href="tickets.html">🎫 Tickets</a></li>
+                <li><a href="settings.html" class="active">⚙️ Settings</a></li>
+            </ul>
+
+            <div class="sidebar-section">
+                <ul class="sidebar-menu">
+                    <li><a href="../index.html">🌐 View Site</a></li>
+                    <li><a href="#" onclick="Auth.logout()">🚪 Logout</a></li>
+                </ul>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="page-header">
+                <h1>Settings</h1>
+                <p>Konfigurasi panel Anda</p>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-xl);">
+                <!-- General Settings -->
+                <div class="card">
+                    <h3 style="margin-bottom: var(--spacing-lg);">⚙️ General</h3>
+
+                    <form id="generalForm">
+                        <div class="form-group">
+                            <label class="form-label">Nama Panel</label>
+                            <input type="text" class="form-input" id="siteName" placeholder="NiniPanel">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">WhatsApp Admin</label>
+                            <input type="text" class="form-input" id="adminWhatsApp" placeholder="08123456789">
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">Simpan</button>
+                    </form>
+                </div>
+
+                <!-- QRIS Settings -->
+                <div class="card">
+                    <h3 style="margin-bottom: var(--spacing-lg);">💳 QRIS Image</h3>
+
+                    <div id="qrisPreview" style="text-align: center; margin-bottom: var(--spacing-lg);">
+                        <div
+                            style="width: 200px; height: 200px; background: var(--glass-bg); border-radius: var(--radius-lg); display: flex; align-items: center; justify-content: center; margin: 0 auto; color: var(--text-secondary);">
+                            Belum ada QRIS
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Upload QRIS</label>
+                        <input type="file" class="form-input" id="qrisFile" accept="image/*">
+                    </div>
+
+                    <button type="button" class="btn btn-primary" onclick="saveQris()">Simpan QRIS</button>
+                </div>
+            </div>
+
+            <!-- Pricing Settings -->
+            <div class="card" style="margin-top: var(--spacing-xl);">
+                <h3 style="margin-bottom: var(--spacing-lg);">💰 Pricing</h3>
+
+                <div class="table-container">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Paket</th>
+                                <th>RAM</th>
+                                <th>Disk</th>
+                                <th>Harga/Hari</th>
+                                <th>Harga/Minggu</th>
+                                <th>Harga/Bulan</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pricingBody"></tbody>
+                    </table>
+                </div>
+
+                <p style="color: var(--text-secondary); font-size: 0.875rem; margin-top: var(--spacing-md);">
+                    * Edit harga di file <code>storage.js</code> untuk perubahan permanen.
+                </p>
+            </div>
+
+            <!-- Admin Account -->
+            <div class="card" style="margin-top: var(--spacing-xl);">
+                <h3 style="margin-bottom: var(--spacing-lg);">👤 Admin Account</h3>
+
+                <form id="passwordForm">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--spacing-md);">
+                        <div class="form-group">
+                            <label class="form-label">Password Lama</label>
+                            <input type="password" class="form-input" id="oldPassword" placeholder="••••••••">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Password Baru</label>
+                            <input type="password" class="form-input" id="newPassword" placeholder="••••••••">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Konfirmasi Password</label>
+                            <input type="password" class="form-input" id="confirmPassword" placeholder="••••••••">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Ubah Password</button>
+                </form>
+            </div>
+
+            <!-- Danger Zone -->
+            <div class="card" style="margin-top: var(--spacing-xl); border-color: var(--danger);">
+                <h3 style="margin-bottom: var(--spacing-lg); color: var(--danger);">⚠️ Danger Zone</h3>
+
+                <p style="color: var(--text-secondary); margin-bottom: var(--spacing-lg);">
+                    Aksi berikut tidak dapat dibatalkan. Hati-hati!
+                </p>
+
+                <button class="btn btn-danger" onclick="resetAllData()">🗑️ Reset Semua Data</button>
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/storage.js"></script>
+    <script src="../js/auth.js"></script>
+    <script>
+        // Check admin
+        if (!Auth.requireAdmin()) {
+            // Redirect handled by requireAdmin
+        }
+
+        // Load settings
+        function loadSettings() {
+            const settings = Storage.getSettings();
+
+            document.getElementById('siteName').value = settings.siteName || 'NiniPanel';
+            document.getElementById('adminWhatsApp').value = settings.adminWhatsApp || '';
+
+            // QRIS preview
+            if (settings.qrisImage) {
+                document.getElementById('qrisPreview').innerHTML = `
+          <img src="${settings.qrisImage}" style="max-width: 200px; max-height: 200px; border-radius: var(--radius-lg);">
+        `;
+            }
+
+            // Pricing table
+            const plans = settings.plans || {};
+            const pricingBody = document.getElementById('pricingBody');
+
+            pricingBody.innerHTML = Object.entries(plans).map(([key, plan]) => `
+        <tr>
+          <td style="font-weight: 500;">${plan.name}</td>
+          <td>${plan.ram}MB</td>
+          <td>${plan.disk >= 1024 ? (plan.disk / 1024) + 'GB' : plan.disk + 'MB'}</td>
+          <td>Rp ${plan.daily?.toLocaleString('id-ID') || 0}</td>
+          <td>Rp ${plan.weekly?.toLocaleString('id-ID') || 0}</td>
+          <td>Rp ${plan.monthly?.toLocaleString('id-ID') || 0}</td>
+        </tr>
+      `).join('');
+        }
+
+        // General form
+        document.getElementById('generalForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            const siteName = document.getElementById('siteName').value;
+            const adminWhatsApp = document.getElementById('adminWhatsApp').value;
+
+            Storage.updateSettings({ siteName, adminWhatsApp });
+            alert('Settings berhasil disimpan!');
+        });
+
+        // QRIS upload
+        function saveQris() {
+            const file = document.getElementById('qrisFile').files[0];
+            if (!file) {
+                alert('Pilih file QRIS terlebih dahulu.');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                Storage.updateSettings({ qrisImage: e.target.result });
+                document.getElementById('qrisPreview').innerHTML = `
+          <img src="${e.target.result}" style="max-width: 200px; max-height: 200px; border-radius: var(--radius-lg);">
+        `;
+                alert('QRIS berhasil disimpan!');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // Password form
+        document.getElementById('passwordForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const oldPassword = document.getElementById('oldPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            if (!oldPassword || !newPassword || !confirmPassword) {
+                alert('Mohon lengkapi semua field.');
+                return;
+            }
+
+            if (newPassword !== confirmPassword) {
+                alert('Password baru tidak cocok!');
+                return;
+            }
+
+            const result = await Auth.changePassword(oldPassword, newPassword);
+            alert(result.message);
+
+            if (result.success) {
+                document.getElementById('passwordForm').reset();
+            }
+        });
+
+        // Reset data
+        function resetAllData() {
+            if (confirm('PERINGATAN: Semua data akan dihapus termasuk users, orders, dan servers. Yakin ingin melanjutkan?')) {
+                if (confirm('Ini adalah konfirmasi terakhir. Semua data akan HILANG. Lanjutkan?')) {
+                    localStorage.clear();
+                    Storage.init();
+                    alert('Semua data telah direset.');
+                    window.location.reload();
+                }
+            }
+        }
+
+        loadSettings();
+    </script>
+</body>
+
+</html>

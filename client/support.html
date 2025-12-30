@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Support - NiniPanel</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../styles.css">
+    <style>
+        .ticket-card {
+            padding: var(--spacing-lg);
+            margin-bottom: var(--spacing-md);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .ticket-card:hover {
+            transform: translateX(4px);
+        }
+
+        .ticket-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .ticket-subject {
+            font-weight: 600;
+        }
+
+        .ticket-meta {
+            display: flex;
+            gap: var(--spacing-lg);
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            height: 500px;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: var(--spacing-lg);
+        }
+
+        .chat-message {
+            margin-bottom: var(--spacing-lg);
+            display: flex;
+            gap: var(--spacing-md);
+        }
+
+        .chat-message.user {
+            flex-direction: row-reverse;
+        }
+
+        .chat-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+
+        .chat-message.admin .chat-avatar {
+            background: linear-gradient(135deg, var(--success), #059669);
+        }
+
+        .chat-bubble {
+            background: var(--glass-bg);
+            padding: var(--spacing-md) var(--spacing-lg);
+            border-radius: var(--radius-lg);
+            max-width: 70%;
+        }
+
+        .chat-message.user .chat-bubble {
+            background: rgba(99, 102, 241, 0.2);
+        }
+
+        .chat-bubble .time {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: var(--spacing-sm);
+        }
+
+        .chat-input {
+            display: flex;
+            gap: var(--spacing-md);
+            padding: var(--spacing-lg);
+            border-top: 1px solid var(--border-color);
+        }
+
+        .chat-input input {
+            flex: 1;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="dashboard-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <a href="../index.html" class="sidebar-brand">
+                <span>🚀</span>
+                <span class="text-gradient">NiniPanel</span>
+            </a>
+
+            <ul class="sidebar-menu">
+                <li><a href="dashboard.html">📊 Dashboard</a></li>
+                <li><a href="servers.html">🖥️ Server Saya</a></li>
+                <li><a href="console.html">💻 Console</a></li>
+                <li><a href="files.html">📁 File Manager</a></li>
+                <li><a href="startup.html">⚙️ Startup</a></li>
+                <li><a href="backups.html">💾 Backups</a></li>
+            </ul>
+
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">Akun</div>
+                <ul class="sidebar-menu">
+                    <li><a href="billing.html">💳 Billing</a></li>
+                    <li><a href="support.html" class="active">🎫 Support</a></li>
+                    <li><a href="#" onclick="Auth.logout()">🚪 Logout</a></li>
+                </ul>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="page-header">
+                <div class="d-flex justify-between align-center">
+                    <div>
+                        <h1>Support</h1>
+                        <p>Butuh bantuan? Buat tiket atau hubungi kami</p>
+                    </div>
+                    <button class="btn btn-primary" onclick="showNewTicketModal()">+ Buat Tiket</button>
+                </div>
+            </div>
+
+            <!-- Quick Contact -->
+            <div class="card" style="margin-bottom: var(--spacing-xl);">
+                <h3 style="margin-bottom: var(--spacing-md);">💬 Fast Response via WhatsApp</h3>
+                <p style="color: var(--text-secondary); margin-bottom: var(--spacing-lg);">Untuk respon lebih cepat,
+                    hubungi kami langsung via WhatsApp</p>
+                <a href="#" class="btn btn-success" id="whatsappBtn" target="_blank">📱 Chat WhatsApp</a>
+            </div>
+
+            <!-- Tickets List -->
+            <div class="card">
+                <h3 style="margin-bottom: var(--spacing-lg);">Tiket Saya</h3>
+                <div id="ticketsList">
+                    <div style="text-align: center; padding: var(--spacing-2xl); color: var(--text-secondary);">
+                        <div style="font-size: 3rem; margin-bottom: var(--spacing-md);">🎫</div>
+                        <p>Belum ada tiket support.</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- New Ticket Modal -->
+    <div class="modal-overlay" id="newTicketModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Buat Tiket Baru</h3>
+                <button class="modal-close" onclick="closeModal('newTicketModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="newTicketForm">
+                    <div class="form-group">
+                        <label class="form-label">Kategori</label>
+                        <select class="form-input form-select" id="ticketCategory" required>
+                            <option value="">Pilih kategori...</option>
+                            <option value="billing">Billing & Pembayaran</option>
+                            <option value="technical">Technical Support</option>
+                            <option value="sales">Sales & Produk</option>
+                            <option value="other">Lainnya</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Subject</label>
+                        <input type="text" class="form-input" id="ticketSubject" placeholder="Ringkasan masalah"
+                            required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Pesan</label>
+                        <textarea class="form-input" id="ticketMessage"
+                            placeholder="Jelaskan masalah Anda secara detail..." rows="5" required></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('newTicketModal')">Batal</button>
+                <button class="btn btn-primary" onclick="submitTicket()">Kirim Tiket</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ticket Detail Modal -->
+    <div class="modal-overlay" id="ticketDetailModal">
+        <div class="modal" style="max-width: 600px;">
+            <div class="modal-header">
+                <h3 id="ticketDetailSubject">Tiket Detail</h3>
+                <button class="modal-close" onclick="closeModal('ticketDetailModal')">&times;</button>
+            </div>
+            <div class="modal-body" style="padding: 0;">
+                <div class="chat-container">
+                    <div class="chat-messages" id="chatMessages"></div>
+                    <div class="chat-input">
+                        <input type="text" class="form-input" id="replyInput" placeholder="Tulis balasan...">
+                        <button class="btn btn-primary" onclick="sendReply()">Kirim</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/storage.js"></script>
+    <script src="../js/auth.js"></script>
+    <script>
+        // Check login
+        if (!Auth.requireLogin()) {
+            // Redirect handled by requireLogin
+        }
+
+        const user = Auth.getCurrentUser();
+        let currentTicket = null;
+
+        // Settings
+        const settings = Storage.getSettings();
+        const waNumber = settings.adminWhatsApp || '08123456789';
+        document.getElementById('whatsappBtn').href = `https://wa.me/${waNumber.replace(/^0/, '62')}?text=${encodeURIComponent('Halo admin NiniPanel, saya butuh bantuan.')}`;
+
+        // Load tickets
+        function loadTickets() {
+            const tickets = Storage.getTicketsByUser(user.id);
+            const ticketsList = document.getElementById('ticketsList');
+
+            if (tickets.length === 0) return;
+
+            const statusBadges = {
+                open: '<span class="badge badge-success">Open</span>',
+                replied: '<span class="badge badge-primary">Replied</span>',
+                closed: '<span class="badge badge-danger">Closed</span>'
+            };
+
+            const categoryLabels = {
+                billing: 'Billing',
+                technical: 'Technical',
+                sales: 'Sales',
+                other: 'Other'
+            };
+
+            ticketsList.innerHTML = tickets.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).map(ticket => `
+        <div class="card ticket-card" onclick="openTicket('${ticket.id}')">
+          <div class="ticket-header">
+            <span class="ticket-subject">${ticket.subject}</span>
+            ${statusBadges[ticket.status]}
+          </div>
+          <div class="ticket-meta">
+            <span>🏷️ ${categoryLabels[ticket.category] || ticket.category}</span>
+            <span>📅 ${new Date(ticket.createdAt).toLocaleDateString('id-ID')}</span>
+            <span>💬 ${ticket.messages?.length || 1} pesan</span>
+          </div>
+        </div>
+      `).join('');
+        }
+
+        function showNewTicketModal() {
+            document.getElementById('newTicketModal').classList.add('active');
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('active');
+        }
+
+        function submitTicket() {
+            const category = document.getElementById('ticketCategory').value;
+            const subject = document.getElementById('ticketSubject').value;
+            const message = document.getElementById('ticketMessage').value;
+
+            if (!category || !subject || !message) {
+                alert('Mohon lengkapi semua field.');
+                return;
+            }
+
+            const ticket = Storage.addTicket({
+                userId: user.id,
+                category,
+                subject,
+                messages: [{
+                    sender: 'user',
+                    senderName: user.name,
+                    content: message,
+                    createdAt: new Date().toISOString()
+                }]
+            });
+
+            if (ticket) {
+                closeModal('newTicketModal');
+                document.getElementById('newTicketForm').reset();
+                loadTickets();
+                alert('Tiket berhasil dibuat! Kami akan segera merespon.');
+            }
+        }
+
+        function openTicket(ticketId) {
+            const tickets = Storage.getTickets();
+            currentTicket = tickets.find(t => t.id === ticketId);
+
+            if (!currentTicket) return;
+
+            document.getElementById('ticketDetailSubject').textContent = currentTicket.subject;
+            renderMessages();
+            document.getElementById('ticketDetailModal').classList.add('active');
+        }
+
+        function renderMessages() {
+            const messages = currentTicket.messages || [];
+            const container = document.getElementById('chatMessages');
+
+            container.innerHTML = messages.map(msg => {
+                const isUser = msg.sender === 'user';
+                const initials = msg.senderName?.split(' ').map(n => n[0]).join('').substring(0, 2) || '??';
+                const time = new Date(msg.createdAt).toLocaleString('id-ID', {
+                    day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
+                });
+
+                return `
+          <div class="chat-message ${isUser ? 'user' : 'admin'}">
+            <div class="chat-avatar">${initials}</div>
+            <div class="chat-bubble">
+              <div style="font-weight: 500; margin-bottom: 4px;">${msg.senderName}</div>
+              <div>${msg.content}</div>
+              <div class="time">${time}</div>
+            </div>
+          </div>
+        `;
+            }).join('');
+
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function sendReply() {
+            const input = document.getElementById('replyInput');
+            const content = input.value.trim();
+
+            if (!content || !currentTicket) return;
+
+            Storage.addTicketMessage(currentTicket.id, {
+                sender: 'user',
+                senderName: user.name,
+                content
+            });
+
+            // Refresh ticket
+            const tickets = Storage.getTickets();
+            currentTicket = tickets.find(t => t.id === currentTicket.id);
+
+            input.value = '';
+            renderMessages();
+            loadTickets();
+        }
+
+        // Enter to send
+        document.getElementById('replyInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendReply();
+        });
+
+        loadTickets();
+    </script>
+</body>
+
+</html>

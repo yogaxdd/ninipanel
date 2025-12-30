@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NiniPanel - VPS Hosting Terjangkau</title>
+  <meta name="description" content="NiniPanel menyediakan layanan VPS mini dengan harga terjangkau. Mulai dari Rp 500/hari.">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- Navigation -->
+  <nav class="navbar" id="navbar">
+    <div class="container">
+      <a href="index.html" class="navbar-brand">
+        <div class="logo">🚀</div>
+        <span class="text-gradient">NiniPanel</span>
+      </a>
+      
+      <ul class="navbar-menu">
+        <li><a href="#features">Fitur</a></li>
+        <li><a href="#pricing">Harga</a></li>
+        <li><a href="#testimonials">Testimoni</a></li>
+        <li><a href="#faq">FAQ</a></li>
+      </ul>
+      
+      <div class="navbar-actions">
+        <a href="auth/login.html" class="btn btn-secondary btn-sm">Masuk</a>
+        <a href="auth/register.html" class="btn btn-primary btn-sm">Daftar</a>
+      </div>
+      
+      <button class="mobile-menu-btn" id="mobileMenuBtn">☰</button>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="container">
+      <div class="hero-content">
+        <div class="hero-badge">
+          <span class="dot"></span>
+          <span>100% Uptime Guaranteed</span>
+        </div>
+        
+        <h1>VPS Mini dengan <span class="text-gradient">Harga Terjangkau</span></h1>
+        <p>Mulai bisnis hosting Anda dengan VPS mini yang powerful. Performa tinggi, harga rendah, support 24/7.</p>
+        
+        <div class="hero-buttons">
+          <a href="#pricing" class="btn btn-primary btn-lg">Lihat Paket</a>
+          <a href="#features" class="btn btn-secondary btn-lg">Pelajari Lebih</a>
+        </div>
+        
+        <div class="hero-stats">
+          <div class="stat-item">
+            <div class="number">99.9%</div>
+            <div class="label">Uptime</div>
+          </div>
+          <div class="stat-item">
+            <div class="number">500+</div>
+            <div class="label">Pelanggan</div>
+          </div>
+          <div class="stat-item">
+            <div class="number">24/7</div>
+            <div class="label">Support</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features Section -->
+  <section class="features" id="features">
+    <div class="container">
+      <div class="section-header">
+        <h2>Kenapa Pilih <span class="text-gradient">NiniPanel?</span></h2>
+        <p>Kami menyediakan layanan VPS dengan fitur lengkap dan harga yang sangat terjangkau.</p>
+      </div>
+      
+      <div class="features-grid">
+        <div class="card feature-card">
+          <div class="icon">⚡</div>
+          <h3>Performa Tinggi</h3>
+          <p>Server dengan SSD NVMe untuk kecepatan maksimal. Proses data lebih cepat dan responsif.</p>
+        </div>
+        
+        <div class="card feature-card">
+          <div class="icon">🛡️</div>
+          <h3>DDoS Protection</h3>
+          <p>Perlindungan DDoS tingkat enterprise untuk menjaga server Anda tetap online.</p>
+        </div>
+        
+        <div class="card feature-card">
+          <div class="icon">🔧</div>
+          <h3>Panel Mudah</h3>
+          <p>Control panel yang user-friendly. Kelola VPS Anda dengan mudah tanpa ribet.</p>
+        </div>
+        
+        <div class="card feature-card">
+          <div class="icon">💬</div>
+          <h3>Support 24/7</h3>
+          <p>Tim support kami siap membantu kapan saja. Respon cepat via WhatsApp.</p>
+        </div>
+        
+        <div class="card feature-card">
+          <div class="icon">🔄</div>
+          <h3>Instant Setup</h3>
+          <p>VPS langsung aktif setelah pembayaran dikonfirmasi. Tidak perlu menunggu lama.</p>
+        </div>
+        
+        <div class="card feature-card">
+          <div class="icon">💰</div>
+          <h3>Harga Terjangkau</h3>
+          <p>Mulai dari Rp 500/hari. Cocok untuk pemula dan project kecil.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Pricing Section -->
+  <section class="pricing" id="pricing">
+    <div class="container">
+      <div class="section-header">
+        <h2>Pilih Paket <span class="text-gradient">VPS Anda</span></h2>
+        <p>Tersedia berbagai pilihan paket yang bisa disesuaikan dengan kebutuhan Anda.</p>
+      </div>
+      
+      <div class="pricing-toggle">
+        <button class="active" data-period="daily">Harian</button>
+        <button data-period="weekly">Mingguan</button>
+        <button data-period="monthly">Bulanan</button>
+      </div>
+      
+      <div class="pricing-grid">
+        <!-- Starter Plan -->
+        <div class="card pricing-card" data-plan="starter">
+          <div class="plan-name">Starter</div>
+          <div class="plan-specs">
+            <span class="spec">💾 20MB RAM</span>
+            <span class="spec">📁 100MB Disk</span>
+          </div>
+          <div class="price" data-daily="500" data-weekly="3000" data-monthly="10000">
+            Rp 500<span>/hari</span>
+          </div>
+          <ul class="features-list">
+            <li>1 vCPU Core</li>
+            <li>10GB Bandwidth</li>
+            <li>1 IPv4 Address</li>
+            <li>Panel Control</li>
+            <li>WhatsApp Support</li>
+          </ul>
+          <a href="order.html?plan=starter" class="btn btn-secondary">Pilih Paket</a>
+        </div>
+        
+        <!-- Basic Plan -->
+        <div class="card pricing-card" data-plan="basic">
+          <div class="plan-name">Basic</div>
+          <div class="plan-specs">
+            <span class="spec">💾 50MB RAM</span>
+            <span class="spec">📁 250MB Disk</span>
+          </div>
+          <div class="price" data-daily="1000" data-weekly="6000" data-monthly="20000">
+            Rp 1.000<span>/hari</span>
+          </div>
+          <ul class="features-list">
+            <li>1 vCPU Core</li>
+            <li>25GB Bandwidth</li>
+            <li>1 IPv4 Address</li>
+            <li>Panel Control</li>
+            <li>Priority Support</li>
+          </ul>
+          <a href="order.html?plan=basic" class="btn btn-secondary">Pilih Paket</a>
+        </div>
+        
+        <!-- Standard Plan (Popular) -->
+        <div class="card pricing-card popular" data-plan="standard">
+          <div class="plan-name">Standard</div>
+          <div class="plan-specs">
+            <span class="spec">💾 100MB RAM</span>
+            <span class="spec">📁 500MB Disk</span>
+          </div>
+          <div class="price" data-daily="2000" data-weekly="12000" data-monthly="40000">
+            Rp 2.000<span>/hari</span>
+          </div>
+          <ul class="features-list">
+            <li>2 vCPU Cores</li>
+            <li>50GB Bandwidth</li>
+            <li>1 IPv4 Address</li>
+            <li>Full Panel Access</li>
+            <li>Priority Support</li>
+          </ul>
+          <a href="order.html?plan=standard" class="btn btn-primary">Pilih Paket</a>
+        </div>
+        
+        <!-- Premium Plan -->
+        <div class="card pricing-card" data-plan="premium">
+          <div class="plan-name">Premium</div>
+          <div class="plan-specs">
+            <span class="spec">💾 200MB RAM</span>
+            <span class="spec">📁 1GB Disk</span>
+          </div>
+          <div class="price" data-daily="4000" data-weekly="25000" data-monthly="80000">
+            Rp 4.000<span>/hari</span>
+          </div>
+          <ul class="features-list">
+            <li>2 vCPU Cores</li>
+            <li>100GB Bandwidth</li>
+            <li>1 IPv4 Address</li>
+            <li>Full Panel Access</li>
+            <li>VIP Support</li>
+          </ul>
+          <a href="order.html?plan=premium" class="btn btn-secondary">Pilih Paket</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Testimonials Section -->
+  <section class="testimonials" id="testimonials">
+    <div class="container">
+      <div class="section-header">
+        <h2>Apa Kata <span class="text-gradient">Pelanggan Kami?</span></h2>
+        <p>Ribuan pelanggan puas dengan layanan NiniPanel.</p>
+      </div>
+      
+      <div class="testimonials-grid">
+        <div class="card testimonial-card">
+          <p class="quote">"VPS nya murah banget tapi kualitas ga murahan. Server stabil, support cepat respon. Recommended!"</p>
+          <div class="author">
+            <div class="avatar">AR</div>
+            <div class="author-info">
+              <div class="name">Andi Rahmat</div>
+              <div class="role">Bot Developer</div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="card testimonial-card">
+          <p class="quote">"Buat hosting bot WhatsApp mantap banget. Uptime 100% selama 3 bulan pake. Worth it!"</p>
+          <div class="author">
+            <div class="avatar">DS</div>
+            <div class="author-info">
+              <div class="name">Dimas Saputra</div>
+              <div class="role">Full Stack Developer</div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="card testimonial-card">
+          <p class="quote">"Panel nya gampang dipake, cocok buat pemula kayak saya. Support nya juga ramah dan helpful."</p>
+          <div class="author">
+            <div class="avatar">RW</div>
+            <div class="author-info">
+              <div class="name">Rini Wulandari</div>
+              <div class="role">Entrepreneur</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ Section -->
+  <section class="faq" id="faq">
+    <div class="container">
+      <div class="section-header">
+        <h2>Pertanyaan <span class="text-gradient">yang Sering Ditanyakan</span></h2>
+        <p>Belum menemukan jawaban? Hubungi kami via WhatsApp.</p>
+      </div>
+      
+      <div class="faq-list">
+        <div class="faq-item">
+          <button class="faq-question">
+            <span>Apa itu VPS Mini?</span>
+            <span class="icon">+</span>
+          </button>
+          <div class="faq-answer">
+            <p>VPS Mini adalah Virtual Private Server dengan spesifikasi rendah yang cocok untuk project kecil seperti hosting bot, website sederhana, atau aplikasi ringan. Meskipun resource terbatas, performanya tetap stabil dan reliabel.</p>
+          </div>
+        </div>
+        
+        <div class="faq-item">
+          <button class="faq-question">
+            <span>Bagaimana cara pembayaran?</span>
+            <span class="icon">+</span>
+          </button>
+          <div class="faq-answer">
+            <p>Kami menerima pembayaran via QRIS (semua e-wallet dan bank) dan transfer bank. Setelah pembayaran, upload bukti bayar dan VPS akan aktif dalam hitungan menit setelah dikonfirmasi.</p>
+          </div>
+        </div>
+        
+        <div class="faq-item">
+          <button class="faq-question">
+            <span>Berapa lama VPS aktif setelah bayar?</span>
+            <span class="icon">+</span>
+          </button>
+          <div class="faq-answer">
+            <p>VPS akan aktif dalam 5-30 menit setelah pembayaran dikonfirmasi oleh admin. Kami usahakan secepat mungkin agar Anda bisa langsung menggunakan layanan.</p>
+          </div>
+        </div>
+        
+        <div class="faq-item">
+          <button class="faq-question">
+            <span>Apakah bisa upgrade paket?</span>
+            <span class="icon">+</span>
+          </button>
+          <div class="faq-answer">
+            <p>Ya, Anda bisa upgrade paket kapan saja. Cukup hubungi support kami dan kami akan membantu proses upgrade dengan perhitungan harga yang adil.</p>
+          </div>
+        </div>
+        
+        <div class="faq-item">
+          <button class="faq-question">
+            <span>Ada garansi uang kembali?</span>
+            <span class="icon">+</span>
+          </button>
+          <div class="faq-answer">
+            <p>Ya, kami memberikan garansi uang kembali 3 hari jika Anda tidak puas dengan layanan kami. Syarat dan ketentuan berlaku.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA Section -->
+  <section class="cta">
+    <div class="container">
+      <div class="cta-box">
+        <h2>Siap Memulai?</h2>
+        <p>Dapatkan VPS pertama Anda sekarang dengan harga spesial. Tanpa biaya setup!</p>
+        <a href="order.html" class="btn btn-primary btn-lg">Order Sekarang</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <div class="logo">
+            <span>🚀</span>
+            <span class="text-gradient">NiniPanel</span>
+          </div>
+          <p>Platform VPS hosting terjangkau dengan performa tinggi. Cocok untuk developer, entrepreneur, dan siapa saja yang butuh server reliabel.</p>
+        </div>
+        
+        <div class="footer-links">
+          <h4>Layanan</h4>
+          <ul>
+            <li><a href="#pricing">VPS Hosting</a></li>
+            <li><a href="#">Bot Hosting</a></li>
+            <li><a href="#">Web Hosting</a></li>
+          </ul>
+        </div>
+        
+        <div class="footer-links">
+          <h4>Support</h4>
+          <ul>
+            <li><a href="#faq">FAQ</a></li>
+            <li><a href="#">Knowledge Base</a></li>
+            <li><a href="#">Status Server</a></li>
+          </ul>
+        </div>
+        
+        <div class="footer-links">
+          <h4>Legal</h4>
+          <ul>
+            <li><a href="#">Terms of Service</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Refund Policy</a></li>
+          </ul>
+        </div>
+      </div>
+      
+      <div class="footer-bottom">
+        <p>&copy; 2024 NiniPanel. All rights reserved.</p>
+        <div class="social-links">
+          <a href="#" title="WhatsApp">📱</a>
+          <a href="#" title="Instagram">📸</a>
+          <a href="#" title="Discord">💬</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Navbar scroll effect
+    const navbar = document.getElementById('navbar');
+    window.addEventListener('scroll', () => {
+      if (window.scrollY > 50) {
+        navbar.classList.add('scrolled');
+      } else {
+        navbar.classList.remove('scrolled');
+      }
+    });
+
+    // Pricing toggle
+    const pricingButtons = document.querySelectorAll('.pricing-toggle button');
+    const priceElements = document.querySelectorAll('.pricing-card .price');
+    
+    const periodLabels = {
+      daily: '/hari',
+      weekly: '/minggu',
+      monthly: '/bulan'
+    };
+    
+    pricingButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        pricingButtons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        
+        const period = btn.dataset.period;
+        
+        priceElements.forEach(el => {
+          const price = parseInt(el.dataset[period]);
+          el.innerHTML = `Rp ${price.toLocaleString('id-ID')}<span>${periodLabels[period]}</span>`;
+        });
+        
+        // Update order links
+        document.querySelectorAll('.pricing-card a').forEach(link => {
+          const url = new URL(link.href, window.location.origin);
+          url.searchParams.set('period', period);
+          link.href = url.toString();
+        });
+      });
+    });
+
+    // FAQ accordion
+    document.querySelectorAll('.faq-question').forEach(button => {
+      button.addEventListener('click', () => {
+        const item = button.parentElement;
+        const wasActive = item.classList.contains('active');
+        
+        // Close all
+        document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('active'));
+        
+        // Open clicked if wasn't active
+        if (!wasActive) {
+          item.classList.add('active');
+        }
+      });
+    });
+
+    // Mobile menu
+    const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+    const navbarMenu = document.querySelector('.navbar-menu');
+    
+    mobileMenuBtn?.addEventListener('click', () => {
+      navbarMenu.classList.toggle('mobile-open');
+    });
+  </script>
+</body>
+</html>

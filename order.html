@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order VPS - NiniPanel</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .order-page {
+            min-height: 100vh;
+            padding: 100px 0 50px;
+        }
+
+        .order-container {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: var(--spacing-2xl);
+            align-items: start;
+        }
+
+        @media (max-width: 900px) {
+            .order-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .plan-selector {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: var(--spacing-md);
+            margin-bottom: var(--spacing-xl);
+        }
+
+        @media (max-width: 600px) {
+            .plan-selector {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .plan-option {
+            padding: var(--spacing-lg);
+            background: var(--glass-bg);
+            border: 2px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .plan-option:hover {
+            border-color: var(--primary);
+        }
+
+        .plan-option.selected {
+            border-color: var(--primary);
+            background: rgba(99, 102, 241, 0.1);
+        }
+
+        .plan-option .plan-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .plan-option .plan-name {
+            font-weight: 600;
+        }
+
+        .plan-option .plan-specs {
+            display: flex;
+            gap: var(--spacing-sm);
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .duration-selector {
+            display: flex;
+            gap: var(--spacing-sm);
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .duration-option {
+            flex: 1;
+            padding: var(--spacing-md);
+            background: var(--glass-bg);
+            border: 2px solid var(--border-color);
+            border-radius: var(--radius-md);
+            text-align: center;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .duration-option:hover {
+            border-color: var(--primary);
+        }
+
+        .duration-option.selected {
+            border-color: var(--primary);
+            background: rgba(99, 102, 241, 0.1);
+        }
+
+        .duration-option .duration-label {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .duration-option .duration-price {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .order-summary {
+            position: sticky;
+            top: 100px;
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            padding: var(--spacing-sm) 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .summary-row:last-of-type {
+            border-bottom: none;
+        }
+
+        .summary-row.total {
+            font-size: 1.25rem;
+            font-weight: 700;
+            padding-top: var(--spacing-md);
+            margin-top: var(--spacing-md);
+            border-top: 2px solid var(--border-color);
+        }
+
+        .summary-row .label {
+            color: var(--text-secondary);
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navigation -->
+    <nav class="navbar scrolled">
+        <div class="container">
+            <a href="index.html" class="navbar-brand">
+                <div class="logo">🚀</div>
+                <span class="text-gradient">NiniPanel</span>
+            </a>
+
+            <div class="navbar-actions">
+                <a href="auth/login.html" class="btn btn-secondary btn-sm" id="loginBtn">Masuk</a>
+            </div>
+        </div>
+    </nav>
+
+    <section class="order-page">
+        <div class="container">
+            <div class="section-header" style="margin-bottom: var(--spacing-2xl);">
+                <h1>Order <span class="text-gradient">VPS</span></h1>
+                <p>Pilih paket dan durasi sesuai kebutuhan Anda</p>
+            </div>
+
+            <div class="order-container">
+                <div class="order-form">
+                    <div class="card" style="margin-bottom: var(--spacing-xl);">
+                        <h3 style="margin-bottom: var(--spacing-lg);">1. Pilih Paket</h3>
+
+                        <div class="plan-selector" id="planSelector">
+                            <div class="plan-option" data-plan="starter">
+                                <div class="plan-header">
+                                    <span class="plan-name">Starter</span>
+                                    <span class="badge badge-primary">Murah</span>
+                                </div>
+                                <div class="plan-specs">
+                                    <span>💾 20MB</span>
+                                    <span>📁 100MB</span>
+                                    <span>🔄 1 CPU</span>
+                                </div>
+                            </div>
+
+                            <div class="plan-option" data-plan="basic">
+                                <div class="plan-header">
+                                    <span class="plan-name">Basic</span>
+                                </div>
+                                <div class="plan-specs">
+                                    <span>💾 50MB</span>
+                                    <span>📁 250MB</span>
+                                    <span>🔄 1 CPU</span>
+                                </div>
+                            </div>
+
+                            <div class="plan-option" data-plan="standard">
+                                <div class="plan-header">
+                                    <span class="plan-name">Standard</span>
+                                    <span class="badge badge-success">Popular</span>
+                                </div>
+                                <div class="plan-specs">
+                                    <span>💾 100MB</span>
+                                    <span>📁 500MB</span>
+                                    <span>🔄 2 CPU</span>
+                                </div>
+                            </div>
+
+                            <div class="plan-option" data-plan="premium">
+                                <div class="plan-header">
+                                    <span class="plan-name">Premium</span>
+                                    <span class="badge badge-warning">Best</span>
+                                </div>
+                                <div class="plan-specs">
+                                    <span>💾 200MB</span>
+                                    <span>📁 1GB</span>
+                                    <span>🔄 2 CPU</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card" style="margin-bottom: var(--spacing-xl);">
+                        <h3 style="margin-bottom: var(--spacing-lg);">2. Pilih Durasi</h3>
+
+                        <div class="duration-selector" id="durationSelector">
+                            <div class="duration-option" data-duration="daily">
+                                <div class="duration-label">Harian</div>
+                                <div class="duration-price" id="priceDaily">Rp 500</div>
+                            </div>
+
+                            <div class="duration-option" data-duration="weekly">
+                                <div class="duration-label">Mingguan</div>
+                                <div class="duration-price" id="priceWeekly">Rp 3.000</div>
+                            </div>
+
+                            <div class="duration-option" data-duration="monthly">
+                                <div class="duration-label">Bulanan</div>
+                                <div class="duration-price" id="priceMonthly">Rp 10.000</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h3 style="margin-bottom: var(--spacing-lg);">3. Data Diri</h3>
+
+                        <form id="orderForm">
+                            <div class="form-group">
+                                <label class="form-label">Nama Lengkap</label>
+                                <input type="text" class="form-input" id="name" placeholder="Nama Anda" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Email</label>
+                                <input type="email" class="form-input" id="email" placeholder="email@example.com"
+                                    required>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">WhatsApp</label>
+                                <input type="tel" class="form-input" id="phone" placeholder="08123456789" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Catatan (Opsional)</label>
+                                <textarea class="form-input" id="notes" placeholder="Informasi tambahan..."
+                                    rows="3"></textarea>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="order-summary">
+                    <div class="card">
+                        <h3 style="margin-bottom: var(--spacing-lg);">Ringkasan Order</h3>
+
+                        <div class="summary-row">
+                            <span class="label">Paket</span>
+                            <span id="summaryPlan">-</span>
+                        </div>
+
+                        <div class="summary-row">
+                            <span class="label">Durasi</span>
+                            <span id="summaryDuration">-</span>
+                        </div>
+
+                        <div class="summary-row">
+                            <span class="label">RAM</span>
+                            <span id="summaryRam">-</span>
+                        </div>
+
+                        <div class="summary-row">
+                            <span class="label">Storage</span>
+                            <span id="summaryDisk">-</span>
+                        </div>
+
+                        <div class="summary-row total">
+                            <span>Total</span>
+                            <span class="text-gradient" id="summaryTotal">Rp 0</span>
+                        </div>
+
+                        <button type="button" class="btn btn-primary btn-lg"
+                            style="width: 100%; margin-top: var(--spacing-lg);" id="checkoutBtn" disabled>
+                            Lanjut Pembayaran
+                        </button>
+
+                        <p
+                            style="font-size: 0.75rem; color: var(--text-muted); margin-top: var(--spacing-md); text-align: center;">
+                            Dengan melanjutkan, Anda menyetujui Syarat & Ketentuan kami.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script src="js/storage.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        // Plans data
+        const plans = {
+            starter: { name: 'Starter', ram: 20, disk: 100, cpu: 1, daily: 500, weekly: 3000, monthly: 10000 },
+            basic: { name: 'Basic', ram: 50, disk: 250, cpu: 1, daily: 1000, weekly: 6000, monthly: 20000 },
+            standard: { name: 'Standard', ram: 100, disk: 500, cpu: 2, daily: 2000, weekly: 12000, monthly: 40000 },
+            premium: { name: 'Premium', ram: 200, disk: 1024, cpu: 2, daily: 4000, weekly: 25000, monthly: 80000 }
+        };
+
+        const durationLabels = {
+            daily: '1 Hari',
+            weekly: '7 Hari',
+            monthly: '30 Hari'
+        };
+
+        let selectedPlan = null;
+        let selectedDuration = null;
+
+        // Get URL params
+        const urlParams = new URLSearchParams(window.location.search);
+        const paramPlan = urlParams.get('plan');
+        const paramPeriod = urlParams.get('period');
+
+        // Plan selection
+        document.querySelectorAll('.plan-option').forEach(el => {
+            el.addEventListener('click', () => {
+                document.querySelectorAll('.plan-option').forEach(p => p.classList.remove('selected'));
+                el.classList.add('selected');
+                selectedPlan = el.dataset.plan;
+                updatePrices();
+                updateSummary();
+            });
+
+            // Pre-select from URL
+            if (el.dataset.plan === paramPlan) {
+                el.click();
+            }
+        });
+
+        // Duration selection
+        document.querySelectorAll('.duration-option').forEach(el => {
+            el.addEventListener('click', () => {
+                document.querySelectorAll('.duration-option').forEach(d => d.classList.remove('selected'));
+                el.classList.add('selected');
+                selectedDuration = el.dataset.duration;
+                updateSummary();
+            });
+
+            // Pre-select from URL or default to daily
+            if (el.dataset.duration === (paramPeriod || 'daily')) {
+                el.click();
+            }
+        });
+
+        function updatePrices() {
+            if (!selectedPlan) return;
+
+            const plan = plans[selectedPlan];
+            document.getElementById('priceDaily').textContent = `Rp ${plan.daily.toLocaleString('id-ID')}`;
+            document.getElementById('priceWeekly').textContent = `Rp ${plan.weekly.toLocaleString('id-ID')}`;
+            document.getElementById('priceMonthly').textContent = `Rp ${plan.monthly.toLocaleString('id-ID')}`;
+        }
+
+        function updateSummary() {
+            const checkoutBtn = document.getElementById('checkoutBtn');
+
+            if (!selectedPlan || !selectedDuration) {
+                document.getElementById('summaryPlan').textContent = '-';
+                document.getElementById('summaryDuration').textContent = '-';
+                document.getElementById('summaryRam').textContent = '-';
+                document.getElementById('summaryDisk').textContent = '-';
+                document.getElementById('summaryTotal').textContent = 'Rp 0';
+                checkoutBtn.disabled = true;
+                return;
+            }
+
+            const plan = plans[selectedPlan];
+            const price = plan[selectedDuration];
+
+            document.getElementById('summaryPlan').textContent = plan.name;
+            document.getElementById('summaryDuration').textContent = durationLabels[selectedDuration];
+            document.getElementById('summaryRam').textContent = `${plan.ram}MB`;
+            document.getElementById('summaryDisk').textContent = plan.disk >= 1024 ? `${plan.disk / 1024}GB` : `${plan.disk}MB`;
+            document.getElementById('summaryTotal').textContent = `Rp ${price.toLocaleString('id-ID')}`;
+            checkoutBtn.disabled = false;
+        }
+
+        // Fill user data if logged in
+        if (Auth.isLoggedIn()) {
+            const user = Auth.getCurrentUser();
+            document.getElementById('name').value = user.name || '';
+            document.getElementById('email').value = user.email || '';
+            document.getElementById('phone').value = user.phone || '';
+            document.getElementById('loginBtn').textContent = 'Dashboard';
+            document.getElementById('loginBtn').href = 'client/dashboard.html';
+        }
+
+        // Checkout button
+        document.getElementById('checkoutBtn').addEventListener('click', () => {
+            const name = document.getElementById('name').value;
+            const email = document.getElementById('email').value;
+            const phone = document.getElementById('phone').value;
+            const notes = document.getElementById('notes').value;
+
+            if (!name || !email || !phone) {
+                alert('Mohon lengkapi data diri Anda.');
+                return;
+            }
+
+            if (!selectedPlan || !selectedDuration) {
+                alert('Mohon pilih paket dan durasi.');
+                return;
+            }
+
+            const plan = plans[selectedPlan];
+            const amount = plan[selectedDuration];
+
+            // Create order
+            const order = Storage.addOrder({
+                userId: Auth.isLoggedIn() ? Auth.getCurrentUser().id : null,
+                customerName: name,
+                customerEmail: email,
+                customerPhone: phone,
+                notes: notes,
+                plan: selectedPlan,
+                planName: plan.name,
+                duration: selectedDuration,
+                durationLabel: durationLabels[selectedDuration],
+                ram: plan.ram,
+                disk: plan.disk,
+                cpu: plan.cpu,
+                amount: amount
+            });
+
+            if (order) {
+                // Redirect to payment page
+                window.location.href = `payment.html?order=${order.id}`;
+            } else {
+                alert('Gagal membuat order. Silakan coba lagi.');
+            }
+        });
+    </script>
+</body>
+
+</html>

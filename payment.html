@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pembayaran - NiniPanel</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .payment-page {
+            min-height: 100vh;
+            padding: 100px 0 50px;
+        }
+
+        .payment-container {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: var(--spacing-2xl);
+            align-items: start;
+        }
+
+        @media (max-width: 900px) {
+            .payment-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .qris-container {
+            text-align: center;
+            padding: var(--spacing-xl);
+            background: white;
+            border-radius: var(--radius-lg);
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .qris-image {
+            max-width: 250px;
+            margin: 0 auto;
+        }
+
+        .qris-placeholder {
+            width: 250px;
+            height: 250px;
+            background: #f0f0f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto;
+            border-radius: var(--radius-md);
+            color: #666;
+            font-size: 0.875rem;
+        }
+
+        .payment-instructions {
+            background: var(--glass-bg);
+            border-radius: var(--radius-md);
+            padding: var(--spacing-lg);
+        }
+
+        .payment-instructions h4 {
+            margin-bottom: var(--spacing-md);
+        }
+
+        .payment-instructions ol {
+            margin-left: var(--spacing-lg);
+            color: var(--text-secondary);
+        }
+
+        .payment-instructions li {
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .upload-area {
+            border: 2px dashed var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-2xl);
+            text-align: center;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .upload-area:hover {
+            border-color: var(--primary);
+            background: rgba(99, 102, 241, 0.05);
+        }
+
+        .upload-area.has-file {
+            border-color: var(--success);
+            background: rgba(16, 185, 129, 0.05);
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            margin-bottom: var(--spacing-md);
+        }
+
+        .upload-preview {
+            max-width: 200px;
+            max-height: 200px;
+            margin: var(--spacing-md) auto 0;
+            border-radius: var(--radius-md);
+        }
+
+        .order-timer {
+            text-align: center;
+            padding: var(--spacing-lg);
+            background: rgba(239, 68, 68, 0.1);
+            border-radius: var(--radius-md);
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .order-timer .timer {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--danger);
+        }
+
+        .order-timer p {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin-top: var(--spacing-sm);
+        }
+
+        .payment-summary .row {
+            display: flex;
+            justify-content: space-between;
+            padding: var(--spacing-sm) 0;
+        }
+
+        .payment-summary .row .label {
+            color: var(--text-secondary);
+        }
+
+        .payment-summary .total {
+            font-size: 1.5rem;
+            font-weight: 800;
+            padding-top: var(--spacing-md);
+            margin-top: var(--spacing-md);
+            border-top: 2px solid var(--border-color);
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            padding: var(--spacing-sm) var(--spacing-md);
+            border-radius: var(--radius-full);
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        .status-badge.pending {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--warning);
+        }
+
+        .status-badge.paid {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navigation -->
+    <nav class="navbar scrolled">
+        <div class="container">
+            <a href="index.html" class="navbar-brand">
+                <div class="logo">🚀</div>
+                <span class="text-gradient">NiniPanel</span>
+            </a>
+        </div>
+    </nav>
+
+    <section class="payment-page">
+        <div class="container">
+            <div class="section-header" style="margin-bottom: var(--spacing-2xl);">
+                <h1>Pembayaran</h1>
+                <p>Selesaikan pembayaran untuk mengaktifkan VPS Anda</p>
+            </div>
+
+            <div class="payment-container">
+                <div class="payment-methods">
+                    <div class="card">
+                        <h3 style="margin-bottom: var(--spacing-lg);">Scan QRIS</h3>
+
+                        <div class="qris-container">
+                            <div class="qris-placeholder" id="qrisContainer">
+                                <span>QRIS akan ditampilkan di sini</span>
+                            </div>
+                        </div>
+
+                        <div class="payment-instructions">
+                            <h4>Cara Pembayaran:</h4>
+                            <ol>
+                                <li>Buka aplikasi e-wallet atau mobile banking Anda</li>
+                                <li>Pilih menu Scan QR atau QRIS</li>
+                                <li>Scan kode QR di atas</li>
+                                <li>Masukkan nominal sesuai total tagihan</li>
+                                <li>Konfirmasi dan selesaikan pembayaran</li>
+                                <li>Upload bukti pembayaran di bawah</li>
+                            </ol>
+                        </div>
+                    </div>
+
+                    <div class="card" style="margin-top: var(--spacing-xl);">
+                        <h3 style="margin-bottom: var(--spacing-lg);">Upload Bukti Pembayaran</h3>
+
+                        <div class="upload-area" id="uploadArea">
+                            <div class="upload-icon">📤</div>
+                            <h4>Klik atau drag file ke sini</h4>
+                            <p style="color: var(--text-secondary); font-size: 0.875rem;">Format: JPG, PNG max 5MB</p>
+                            <img class="upload-preview hidden" id="uploadPreview">
+                        </div>
+                        <input type="file" id="proofInput" accept="image/*" style="display: none;">
+
+                        <button class="btn btn-primary btn-lg" style="width: 100%; margin-top: var(--spacing-lg);"
+                            id="confirmBtn" disabled>
+                            Konfirmasi Pembayaran
+                        </button>
+                    </div>
+
+                    <div class="card" style="margin-top: var(--spacing-xl);">
+                        <h3 style="margin-bottom: var(--spacing-md);">Butuh Bantuan?</h3>
+                        <p style="color: var(--text-secondary); margin-bottom: var(--spacing-md);">Hubungi admin jika
+                            ada kendala pembayaran:</p>
+                        <a href="#" class="btn btn-secondary" id="whatsappBtn" target="_blank">
+                            📱 Chat WhatsApp
+                        </a>
+                    </div>
+                </div>
+
+                <div class="payment-sidebar">
+                    <div class="card">
+                        <div class="order-timer">
+                            <div class="timer" id="countdown">30:00</div>
+                            <p>Selesaikan pembayaran sebelum waktu habis</p>
+                        </div>
+
+                        <h3 style="margin-bottom: var(--spacing-lg);">Detail Order</h3>
+
+                        <div class="payment-summary">
+                            <div class="row">
+                                <span class="label">Order ID</span>
+                                <span id="orderId">-</span>
+                            </div>
+                            <div class="row">
+                                <span class="label">Status</span>
+                                <span class="status-badge pending" id="orderStatus">
+                                    <span>⏳</span> Menunggu Pembayaran
+                                </span>
+                            </div>
+                            <div class="row">
+                                <span class="label">Paket</span>
+                                <span id="orderPlan">-</span>
+                            </div>
+                            <div class="row">
+                                <span class="label">Durasi</span>
+                                <span id="orderDuration">-</span>
+                            </div>
+                            <div class="row">
+                                <span class="label">RAM</span>
+                                <span id="orderRam">-</span>
+                            </div>
+                            <div class="row">
+                                <span class="label">Storage</span>
+                                <span id="orderDisk">-</span>
+                            </div>
+                            <div class="row total">
+                                <span>Total Bayar</span>
+                                <span class="text-gradient" id="orderAmount">Rp 0</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="text-align: center; margin-top: var(--spacing-lg);">
+                        <a href="order.html" style="color: var(--text-secondary); font-size: 0.875rem;">← Kembali ke
+                            halaman order</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Success Modal -->
+    <div class="modal-overlay" id="successModal">
+        <div class="modal">
+            <div class="modal-body" style="text-align: center; padding: var(--spacing-2xl);">
+                <div style="font-size: 4rem; margin-bottom: var(--spacing-lg);">✅</div>
+                <h2 style="margin-bottom: var(--spacing-md);">Pembayaran Terkirim!</h2>
+                <p style="color: var(--text-secondary); margin-bottom: var(--spacing-xl);">
+                    Bukti pembayaran Anda telah kami terima. Admin akan memverifikasi dalam 5-30 menit.
+                </p>
+                <a href="index.html" class="btn btn-primary">Kembali ke Beranda</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/storage.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        // Get order ID from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const orderId = urlParams.get('order');
+
+        if (!orderId) {
+            window.location.href = 'order.html';
+        }
+
+        // Get order data
+        const orders = Storage.getOrders();
+        const order = orders.find(o => o.id === orderId);
+
+        if (!order) {
+            alert('Order tidak ditemukan.');
+            window.location.href = 'order.html';
+        }
+
+        // Display order details
+        document.getElementById('orderId').textContent = order.id.toUpperCase();
+        document.getElementById('orderPlan').textContent = order.planName;
+        document.getElementById('orderDuration').textContent = order.durationLabel;
+        document.getElementById('orderRam').textContent = `${order.ram}MB`;
+        document.getElementById('orderDisk').textContent = order.disk >= 1024 ? `${order.disk / 1024}GB` : `${order.disk}MB`;
+        document.getElementById('orderAmount').textContent = `Rp ${order.amount.toLocaleString('id-ID')}`;
+
+        // Settings
+        const settings = Storage.getSettings();
+
+        // WhatsApp button
+        const waNumber = settings.adminWhatsApp || '08123456789';
+        const waMessage = encodeURIComponent(`Halo admin NiniPanel, saya ingin konfirmasi pembayaran untuk order #${order.id.toUpperCase()}`);
+        document.getElementById('whatsappBtn').href = `https://wa.me/${waNumber.replace(/^0/, '62')}?text=${waMessage}`;
+
+        // QRIS image
+        if (settings.qrisImage) {
+            document.getElementById('qrisContainer').innerHTML = `<img src="${settings.qrisImage}" alt="QRIS" class="qris-image">`;
+        }
+
+        // Countdown timer (30 minutes)
+        let timeLeft = 30 * 60;
+        const countdownEl = document.getElementById('countdown');
+
+        const timer = setInterval(() => {
+            timeLeft--;
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            countdownEl.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+
+            if (timeLeft <= 0) {
+                clearInterval(timer);
+                // Update order status to expired
+                Storage.updateOrder(orderId, { status: 'expired' });
+                alert('Waktu pembayaran habis. Silakan buat order baru.');
+                window.location.href = 'order.html';
+            }
+        }, 1000);
+
+        // File upload
+        const uploadArea = document.getElementById('uploadArea');
+        const proofInput = document.getElementById('proofInput');
+        const uploadPreview = document.getElementById('uploadPreview');
+        const confirmBtn = document.getElementById('confirmBtn');
+
+        let uploadedFile = null;
+
+        uploadArea.addEventListener('click', () => proofInput.click());
+
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.style.borderColor = 'var(--primary)';
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.style.borderColor = '';
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            const file = e.dataTransfer.files[0];
+            if (file && file.type.startsWith('image/')) {
+                handleFile(file);
+            }
+        });
+
+        proofInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                handleFile(file);
+            }
+        });
+
+        function handleFile(file) {
+            if (file.size > 5 * 1024 * 1024) {
+                alert('Ukuran file terlalu besar. Maksimal 5MB.');
+                return;
+            }
+
+            uploadedFile = file;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                uploadPreview.src = e.target.result;
+                uploadPreview.classList.remove('hidden');
+                uploadArea.classList.add('has-file');
+                confirmBtn.disabled = false;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // Confirm payment
+        confirmBtn.addEventListener('click', () => {
+            if (!uploadedFile) {
+                alert('Mohon upload bukti pembayaran terlebih dahulu.');
+                return;
+            }
+
+            confirmBtn.disabled = true;
+            confirmBtn.innerHTML = '<span class="spinner" style="width:20px;height:20px;border-width:2px;"></span>';
+
+            // Simulate upload delay
+            setTimeout(() => {
+                // Convert file to base64 and save
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    Storage.updateOrder(orderId, {
+                        status: 'pending_verification',
+                        paymentProof: e.target.result,
+                        paymentDate: new Date().toISOString()
+                    });
+
+                    // Show success modal
+                    document.getElementById('successModal').classList.add('active');
+
+                    // Stop countdown
+                    clearInterval(timer);
+                };
+                reader.readAsDataURL(uploadedFile);
+            }, 1500);
+        });
+    </script>
+</body>
+
+</html>

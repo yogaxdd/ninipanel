@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Servers - NiniPanel Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../styles.css">
+</head>
+
+<body>
+    <div class="dashboard-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <a href="../index.html" class="sidebar-brand">
+                <span>🚀</span>
+                <span class="text-gradient">NiniPanel</span>
+            </a>
+
+            <div
+                style="padding: var(--spacing-sm) var(--spacing-md); background: rgba(239, 68, 68, 0.1); border-radius: var(--radius-md); margin-bottom: var(--spacing-lg);">
+                <span style="color: var(--danger); font-weight: 600; font-size: 0.75rem;">👑 ADMIN PANEL</span>
+            </div>
+
+            <ul class="sidebar-menu">
+                <li><a href="index.html">📊 Dashboard</a></li>
+                <li><a href="orders.html">📦 Orders</a></li>
+                <li><a href="users.html">👥 Users</a></li>
+                <li><a href="servers.html" class="active">🖥️ Servers</a></li>
+                <li><a href="tickets.html">🎫 Tickets</a></li>
+                <li><a href="settings.html">⚙️ Settings</a></li>
+            </ul>
+
+            <div class="sidebar-section">
+                <ul class="sidebar-menu">
+                    <li><a href="../index.html">🌐 View Site</a></li>
+                    <li><a href="#" onclick="Auth.logout()">🚪 Logout</a></li>
+                </ul>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="page-header">
+                <h1>Manage Servers</h1>
+                <p>Kelola semua VPS</p>
+            </div>
+
+            <!-- Stats -->
+            <div class="stats-grid" style="grid-template-columns: repeat(4, 1fr); margin-bottom: var(--spacing-xl);">
+                <div class="card stat-card">
+                    <div class="stat-value" id="totalServers">0</div>
+                    <div class="stat-label">Total Servers</div>
+                </div>
+                <div class="card stat-card">
+                    <div class="stat-value" id="onlineServers">0</div>
+                    <div class="stat-label">Online</div>
+                </div>
+                <div class="card stat-card">
+                    <div class="stat-value" id="offlineServers">0</div>
+                    <div class="stat-label">Offline</div>
+                </div>
+                <div class="card stat-card">
+                    <div class="stat-value" id="expiringServers">0</div>
+                    <div class="stat-label">Expiring Soon</div>
+                </div>
+            </div>
+
+            <!-- Servers Table -->
+            <div class="card">
+                <div class="table-container">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Server</th>
+                                <th>User</th>
+                                <th>Specs</th>
+                                <th>IP</th>
+                                <th>Status</th>
+                                <th>Expires</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="serversBody">
+                            <tr>
+                                <td colspan="7"
+                                    style="text-align: center; padding: var(--spacing-2xl); color: var(--text-secondary);">
+                                    Tidak ada server.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/storage.js"></script>
+    <script src="../js/auth.js"></script>
+    <script>
+        // Check admin
+        if (!Auth.requireAdmin()) {
+            // Redirect handled by requireAdmin
+        }
+
+        // Load servers
+        function loadServers() {
+            const servers = Storage.getServers();
+            const users = Storage.getUsers();
+            const tbody = document.getElementById('serversBody');
+
+            // Stats
+            document.getElementById('totalServers').textContent = servers.length;
+            document.getElementById('onlineServers').textContent = servers.filter(s => s.status === 'online').length;
+            document.getElementById('offlineServers').textContent = servers.filter(s => s.status === 'offline').length;
+
+            const weekFromNow = new Date();
+            weekFromNow.setDate(weekFromNow.getDate() + 7);
+            document.getElementById('expiringServers').textContent = servers.filter(s => new Date(s.expiresAt) < weekFromNow).length;
+
+            if (servers.length === 0) {
+                return;
+            }
+
+            tbody.innerHTML = servers.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).map(server => {
+                const user = users.find(u => u.id === server.userId);
+                const statusClass = server.status === 'online' ? 'success' : server.status === 'starting' ? 'warning' : 'danger';
+                const isExpired = new Date(server.expiresAt) < new Date();
+
+                return `
+          <tr>
+            <td>
+              <div style="font-weight: 500;">${server.name}</div>
+              <div style="font-size: 0.75rem; color: var(--text-secondary);">${server.planName}</div>
+            </td>
+            <td>${user?.name || 'Unknown'}</td>
+            <td>
+              <span style="font-size: 0.75rem;">${server.ram}MB RAM / ${server.disk >= 1024 ? (server.disk / 1024) + 'GB' : server.disk + 'MB'} Disk</span>
+            </td>
+            <td><code>${server.ip || '-'}</code></td>
+            <td>
+              <div class="vps-status ${server.status}">
+                <span class="dot"></span>
+                <span>${server.status}</span>
+              </div>
+            </td>
+            <td>
+              <span class="${isExpired ? 'badge badge-danger' : ''}">${new Date(server.expiresAt).toLocaleDateString('id-ID')}</span>
+            </td>
+            <td>
+              <div class="d-flex gap-1">
+                ${server.status === 'online' ? `
+                  <button class="btn btn-warning btn-sm" onclick="toggleServer('${server.id}', 'offline')">Stop</button>
+                ` : `
+                  <button class="btn btn-success btn-sm" onclick="toggleServer('${server.id}', 'online')">Start</button>
+                `}
+                <button class="btn btn-danger btn-sm" onclick="deleteServer('${server.id}')">Delete</button>
+              </div>
+            </td>
+          </tr>
+        `;
+            }).join('');
+        }
+
+        function toggleServer(id, status) {
+            Storage.updateServer(id, { status });
+            loadServers();
+        }
+
+        function deleteServer(id) {
+            if (confirm('Yakin ingin menghapus server ini?')) {
+                Storage.deleteServer(id);
+                loadServers();
+            }
+        }
+
+        loadServers();
+    </script>
+</body>
+
+</html>

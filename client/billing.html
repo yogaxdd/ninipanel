@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Billing - NiniPanel</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../styles.css">
+</head>
+
+<body>
+    <div class="dashboard-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <a href="../index.html" class="sidebar-brand">
+                <span>🚀</span>
+                <span class="text-gradient">NiniPanel</span>
+            </a>
+
+            <ul class="sidebar-menu">
+                <li><a href="dashboard.html">📊 Dashboard</a></li>
+                <li><a href="servers.html">🖥️ Server Saya</a></li>
+                <li><a href="console.html">💻 Console</a></li>
+                <li><a href="files.html">📁 File Manager</a></li>
+                <li><a href="startup.html">⚙️ Startup</a></li>
+                <li><a href="backups.html">💾 Backups</a></li>
+            </ul>
+
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">Akun</div>
+                <ul class="sidebar-menu">
+                    <li><a href="billing.html" class="active">💳 Billing</a></li>
+                    <li><a href="support.html">🎫 Support</a></li>
+                    <li><a href="#" onclick="Auth.logout()">🚪 Logout</a></li>
+                </ul>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="page-header">
+                <div class="d-flex justify-between align-center">
+                    <div>
+                        <h1>Billing</h1>
+                        <p>Riwayat pembayaran dan invoice</p>
+                    </div>
+                    <a href="../order.html" class="btn btn-primary">+ Order Baru</a>
+                </div>
+            </div>
+
+            <!-- Stats -->
+            <div class="stats-grid" style="grid-template-columns: repeat(3, 1fr);">
+                <div class="card stat-card">
+                    <div class="stat-icon" style="background: rgba(16, 185, 129, 0.1); color: var(--success);">💰</div>
+                    <div class="stat-value" id="totalSpent">Rp 0</div>
+                    <div class="stat-label">Total Pengeluaran</div>
+                </div>
+
+                <div class="card stat-card">
+                    <div class="stat-icon" style="background: rgba(99, 102, 241, 0.1); color: var(--primary);">📄</div>
+                    <div class="stat-value" id="totalOrders">0</div>
+                    <div class="stat-label">Total Order</div>
+                </div>
+
+                <div class="card stat-card">
+                    <div class="stat-icon" style="background: rgba(245, 158, 11, 0.1); color: var(--warning);">⏳</div>
+                    <div class="stat-value" id="pendingPayments">0</div>
+                    <div class="stat-label">Menunggu Pembayaran</div>
+                </div>
+            </div>
+
+            <!-- Orders Table -->
+            <div class="card">
+                <h3 style="margin-bottom: var(--spacing-lg);">Riwayat Order</h3>
+
+                <div class="table-container">
+                    <table class="table" id="ordersTable">
+                        <thead>
+                            <tr>
+                                <th>Order ID</th>
+                                <th>Paket</th>
+                                <th>Durasi</th>
+                                <th>Amount</th>
+                                <th>Status</th>
+                                <th>Tanggal</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ordersBody">
+                            <tr>
+                                <td colspan="7"
+                                    style="text-align: center; padding: var(--spacing-2xl); color: var(--text-secondary);">
+                                    Belum ada riwayat order.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/storage.js"></script>
+    <script src="../js/auth.js"></script>
+    <script>
+        // Check login
+        if (!Auth.requireLogin()) {
+            // Redirect handled by requireLogin
+        }
+
+        const user = Auth.getCurrentUser();
+
+        // Load billing data
+        function loadBilling() {
+            const orders = Storage.getOrdersByUser(user.id);
+
+            // Stats
+            const totalSpent = orders
+                .filter(o => o.status === 'paid' || o.status === 'active')
+                .reduce((sum, o) => sum + (o.amount || 0), 0);
+
+            document.getElementById('totalSpent').textContent = `Rp ${totalSpent.toLocaleString('id-ID')}`;
+            document.getElementById('totalOrders').textContent = orders.length;
+            document.getElementById('pendingPayments').textContent = orders.filter(o => o.status === 'pending' || o.status === 'pending_verification').length;
+
+            // Table
+            const tbody = document.getElementById('ordersBody');
+
+            if (orders.length === 0) {
+                return;
+            }
+
+            const statusBadges = {
+                pending: '<span class="badge badge-warning">Pending</span>',
+                pending_verification: '<span class="badge badge-warning">Verifikasi</span>',
+                paid: '<span class="badge badge-success">Dibayar</span>',
+                active: '<span class="badge badge-success">Aktif</span>',
+                expired: '<span class="badge badge-danger">Expired</span>',
+                cancelled: '<span class="badge badge-danger">Cancelled</span>'
+            };
+
+            tbody.innerHTML = orders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).map(order => `
+        <tr>
+          <td><code>${order.id.substring(0, 8).toUpperCase()}</code></td>
+          <td>${order.planName}</td>
+          <td>${order.durationLabel}</td>
+          <td>Rp ${order.amount.toLocaleString('id-ID')}</td>
+          <td>${statusBadges[order.status] || order.status}</td>
+          <td>${new Date(order.createdAt).toLocaleDateString('id-ID')}</td>
+          <td>
+            ${order.status === 'pending' ? `<a href="../payment.html?order=${order.id}" class="btn btn-primary btn-sm">Bayar</a>` : ''}
+            ${order.status === 'pending_verification' ? '<span style="color: var(--text-muted); font-size: 0.875rem;">Menunggu verifikasi...</span>' : ''}
+          </td>
+        </tr>
+      `).join('');
+        }
+
+        loadBilling();
+    </script>
+</body>
+
+</html>

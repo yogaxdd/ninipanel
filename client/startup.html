@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Startup - NiniPanel</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../styles.css">
+    <style>
+        .startup-grid {
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: var(--spacing-lg);
+        }
+
+        @media (max-width: 992px) {
+            .startup-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .startup-command {
+            background: var(--bg-dark);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: var(--spacing-md);
+            font-family: var(--font-mono);
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            min-height: 100px;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .form-group {
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: var(--spacing-sm);
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .form-group small {
+            display: block;
+            margin-top: var(--spacing-xs);
+            color: var(--text-muted);
+            font-size: 0.75rem;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: var(--spacing-sm) var(--spacing-md);
+            background: var(--bg-dark);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            color: var(--text-primary);
+            font-family: var(--font-sans);
+            font-size: 0.875rem;
+            transition: border-color var(--transition-fast);
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        textarea.form-control {
+            min-height: 80px;
+            resize: vertical;
+            font-family: var(--font-mono);
+        }
+
+        .env-variable {
+            display: grid;
+            grid-template-columns: 1fr 2fr auto;
+            gap: var(--spacing-sm);
+            margin-bottom: var(--spacing-sm);
+            align-items: center;
+        }
+
+        .env-variable input {
+            padding: var(--spacing-sm);
+            background: var(--bg-dark);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            color: var(--text-primary);
+            font-family: var(--font-mono);
+            font-size: 0.875rem;
+        }
+
+        .env-variable button {
+            padding: var(--spacing-sm);
+            background: rgba(239, 68, 68, 0.1);
+            border: none;
+            border-radius: var(--radius-sm);
+            color: var(--danger);
+            cursor: pointer;
+        }
+
+        .section-title {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: var(--spacing-md);
+            padding-bottom: var(--spacing-sm);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .docker-select {
+            position: relative;
+        }
+
+        .server-tab {
+            padding: var(--spacing-sm) var(--spacing-lg);
+            background: var(--glass-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            transition: all var(--transition-fast);
+        }
+
+        .server-tab:hover {
+            border-color: var(--primary);
+        }
+
+        .server-tab.active {
+            background: rgba(99, 102, 241, 0.1);
+            border-color: var(--primary);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="dashboard-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <a href="../index.html" class="sidebar-brand">
+                <span>🚀</span>
+                <span class="text-gradient">NiniPanel</span>
+            </a>
+
+            <ul class="sidebar-menu">
+                <li><a href="dashboard.html">📊 Dashboard</a></li>
+                <li><a href="servers.html">🖥️ Server Saya</a></li>
+                <li><a href="console.html">💻 Console</a></li>
+                <li><a href="files.html">📁 File Manager</a></li>
+                <li><a href="startup.html" class="active">⚙️ Startup</a></li>
+                <li><a href="backups.html">💾 Backups</a></li>
+            </ul>
+
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">Akun</div>
+                <ul class="sidebar-menu">
+                    <li><a href="billing.html">💳 Billing</a></li>
+                    <li><a href="support.html">🎫 Support</a></li>
+                    <li><a href="#" onclick="Auth.logout()">🚪 Logout</a></li>
+                </ul>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="page-header">
+                <h1>⚙️ Startup Configuration</h1>
+                <p>Konfigurasi startup command dan environment variables</p>
+            </div>
+
+            <div class="server-selector" id="serverSelector"
+                style="display: flex; gap: var(--spacing-md); margin-bottom: var(--spacing-lg); flex-wrap: wrap;">
+                <div style="color: var(--text-secondary);">Pilih server:</div>
+            </div>
+
+            <div id="startupContainer">
+                <div class="card" style="text-align: center; padding: var(--spacing-3xl);">
+                    <div style="font-size: 4rem; margin-bottom: var(--spacing-lg);">⚙️</div>
+                    <h3 style="margin-bottom: var(--spacing-sm);">Tidak Ada Server</h3>
+                    <p style="color: var(--text-secondary);">Anda belum memiliki VPS aktif.</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/storage.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/api.js"></script>
+    <script>
+        // Check login
+        if (!Auth.requireLogin()) {
+            // Redirect handled by requireLogin
+        }
+
+        const user = Auth.getCurrentUser();
+        let selectedServer = null;
+        let envVariables = [];
+
+        // Load servers
+        function loadServers() {
+            const servers = Storage.getServersByUser(user.id);
+            const selector = document.getElementById('serverSelector');
+
+            if (servers.length === 0) return;
+
+            selector.innerHTML = '<div style="color: var(--text-secondary);">Pilih server:</div>' +
+                servers.map(server => `
+                <div class="server-tab" data-server="${server.id}">
+                    <span class="vps-status ${server.status}"><span class="dot"></span></span>
+                    <span>${server.name || 'VPS-' + server.id.substring(0, 6).toUpperCase()}</span>
+                </div>
+            `).join('');
+
+            selector.querySelectorAll('.server-tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    selector.querySelectorAll('.server-tab').forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    selectedServer = servers.find(s => s.id === tab.dataset.server);
+                    loadStartupConfig();
+                });
+            });
+
+            // Auto-select first
+            if (servers[0]) {
+                selectedServer = servers[0];
+                selector.querySelector('.server-tab').classList.add('active');
+                loadStartupConfig();
+            }
+        }
+
+        async function loadStartupConfig() {
+            if (!selectedServer) return;
+
+            // Default config
+            let config = {
+                startupCommand: `if [[ -d .git ]] && [[ {{AUTO_UPDATE}} == "1" ]]; then git pull; fi; if [[ ! -z \${NODE_PACKAGES} ]]; then /usr/local/bin/npm install \${NODE_PACKAGES}; fi; if [[ ! -z \${UNNODE_PACKAGES} ]]; then /usr/local/bin/npm uninstall \${UNNODE_PACKAGES}; fi; if [ -f /home/container/package.json ]; then /usr/local/bin/npm install; fi; if [[ ! -z \${CUSTOM_ENVIRONMENT_VARIABLES} ]]; then vars=$(echo \${CUSTOM_ENVIRONMENT_VARIABLES} | tr ';' '\\n'); for line in $vars; do export $line; done fi; /usr/local/bin/\${CMD_RUN};`,
+                dockerImage: 'node:18-alpine',
+                envVariables: [],
+                gitRepo: '',
+                gitBranch: 'main',
+                gitUsername: '',
+                gitToken: '',
+                commandRun: 'npm start'
+            };
+
+            // Try to load from API
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`/api/startup/${selectedServer.id}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await response.json();
+                if (data.success && data.config) {
+                    config = { ...config, ...data.config };
+                }
+            } catch (err) {
+                console.log('Using default config');
+            }
+
+            envVariables = config.envVariables || [];
+            renderStartupForm(config);
+        }
+
+        function renderStartupForm(config) {
+            document.getElementById('startupContainer').innerHTML = `
+                <div class="startup-grid">
+                    <div class="card">
+                        <h3 class="section-title">📜 Startup Command</h3>
+                        <div class="startup-command">${escapeHtml(config.startupCommand)}</div>
+                        
+                        <h3 class="section-title" style="margin-top: var(--spacing-xl);">🔧 Variables</h3>
+                        
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-lg);">
+                            <div class="form-group">
+                                <label>GIT REPO ADDRESS</label>
+                                <input type="text" class="form-control" id="gitRepo" value="${escapeHtml(config.gitRepo)}" placeholder="https://github.com/user_name/repo_name">
+                                <small>GitHub Repo to clone (contoh: https://github.com/user_name/repo_name)</small>
+                            </div>
+                            <div class="form-group">
+                                <label>INSTALL BRANCH</label>
+                                <input type="text" class="form-control" id="gitBranch" value="${escapeHtml(config.gitBranch)}" placeholder="main">
+                                <small>The branch to install</small>
+                            </div>
+                        </div>
+                        
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-lg);">
+                            <div class="form-group">
+                                <label>GIT USERNAME</label>
+                                <input type="text" class="form-control" id="gitUsername" value="${escapeHtml(config.gitUsername)}" placeholder="Username">
+                                <small>Username to auth with git.</small>
+                            </div>
+                            <div class="form-group">
+                                <label>GIT ACCESS TOKEN</label>
+                                <input type="password" class="form-control" id="gitToken" value="${escapeHtml(config.gitToken)}" placeholder="ghp_xxxx...">
+                                <small>Password to use with git. It's best practice to use a Personal Access Token.</small>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>COMMAND RUN</label>
+                            <input type="text" class="form-control" id="commandRun" value="${escapeHtml(config.commandRun)}" placeholder="npm start">
+                            <small>The command to start the bot</small>
+                        </div>
+                        
+                        <h3 class="section-title" style="margin-top: var(--spacing-xl);">🌍 Environment Variables</h3>
+                        <div id="envVarsContainer">
+                            ${renderEnvVariables()}
+                        </div>
+                        <button class="btn btn-secondary" onclick="addEnvVariable()" style="margin-top: var(--spacing-sm);">
+                            ➕ Add Variable
+                        </button>
+                        
+                        <div style="margin-top: var(--spacing-xl); padding-top: var(--spacing-lg); border-top: 1px solid var(--border-color);">
+                            <button class="btn btn-primary" onclick="saveStartupConfig()">💾 Save Configuration</button>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <h3 class="section-title">🐳 Docker Image</h3>
+                        <select class="form-control" id="dockerImage">
+                            <option value="node:18-alpine" ${config.dockerImage === 'node:18-alpine' ? 'selected' : ''}>NodeJS (Versi 18)</option>
+                            <option value="node:20-alpine" ${config.dockerImage === 'node:20-alpine' ? 'selected' : ''}>NodeJS (Versi 20)</option>
+                            <option value="python:3.11-alpine" ${config.dockerImage === 'python:3.11-alpine' ? 'selected' : ''}>Python (Versi 3.11)</option>
+                            <option value="python:3.12-alpine" ${config.dockerImage === 'python:3.12-alpine' ? 'selected' : ''}>Python (Versi 3.12)</option>
+                            <option value="golang:1.21-alpine" ${config.dockerImage === 'golang:1.21-alpine' ? 'selected' : ''}>Golang (Versi 1.21)</option>
+                            <option value="php:8.2-alpine" ${config.dockerImage === 'php:8.2-alpine' ? 'selected' : ''}>PHP (Versi 8.2)</option>
+                            <option value="ruby:3.2-alpine" ${config.dockerImage === 'ruby:3.2-alpine' ? 'selected' : ''}>Ruby (Versi 3.2)</option>
+                            <option value="alpine:latest" ${config.dockerImage === 'alpine:latest' ? 'selected' : ''}>Alpine Linux</option>
+                            <option value="ubuntu:22.04" ${config.dockerImage === 'ubuntu:22.04' ? 'selected' : ''}>Ubuntu 22.04</option>
+                        </select>
+                        <small style="display: block; margin-top: var(--spacing-sm); color: var(--text-muted);">This is an advanced feature allowing you to select a Docker image to use when running this server instance.</small>
+                        
+                        <div style="margin-top: var(--spacing-xl); padding: var(--spacing-md); background: rgba(59, 130, 246, 0.1); border-radius: var(--radius-md);">
+                            <h4 style="color: var(--info); margin-bottom: var(--spacing-sm);">💡 Tips</h4>
+                            <ul style="color: var(--text-secondary); font-size: 0.875rem; margin: 0; padding-left: var(--spacing-lg);">
+                                <li>Pilih Docker image sesuai bahasa pemrograman bot kamu</li>
+                                <li>NodeJS untuk bot JavaScript/TypeScript</li>
+                                <li>Python untuk bot Python</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderEnvVariables() {
+            if (envVariables.length === 0) {
+                return '<div style="color: var(--text-muted); font-size: 0.875rem;">Belum ada environment variables.</div>';
+            }
+
+            return envVariables.map((env, index) => `
+                <div class="env-variable">
+                    <input type="text" placeholder="KEY" value="${escapeHtml(env.key)}" onchange="updateEnvVariable(${index}, 'key', this.value)">
+                    <input type="text" placeholder="VALUE" value="${escapeHtml(env.value)}" onchange="updateEnvVariable(${index}, 'value', this.value)">
+                    <button onclick="removeEnvVariable(${index})">🗑️</button>
+                </div>
+            `).join('');
+        }
+
+        function addEnvVariable() {
+            envVariables.push({ key: '', value: '' });
+            document.getElementById('envVarsContainer').innerHTML = renderEnvVariables();
+        }
+
+        function updateEnvVariable(index, field, value) {
+            envVariables[index][field] = value;
+        }
+
+        function removeEnvVariable(index) {
+            envVariables.splice(index, 1);
+            document.getElementById('envVarsContainer').innerHTML = renderEnvVariables();
+        }
+
+        async function saveStartupConfig() {
+            if (!selectedServer) return;
+
+            const config = {
+                dockerImage: document.getElementById('dockerImage').value,
+                gitRepo: document.getElementById('gitRepo').value,
+                gitBranch: document.getElementById('gitBranch').value,
+                gitUsername: document.getElementById('gitUsername').value,
+                gitToken: document.getElementById('gitToken').value,
+                commandRun: document.getElementById('commandRun').value,
+                envVariables: envVariables.filter(e => e.key)
+            };
+
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`/api/startup/${selectedServer.id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(config)
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    alert('✅ Startup configuration saved!');
+                } else {
+                    alert('❌ Error: ' + data.message);
+                }
+            } catch (err) {
+                // Simulation mode
+                alert('✅ Startup configuration saved! (Simulation mode)');
+            }
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        loadServers();
+    </script>
+</body>
+
+</html>

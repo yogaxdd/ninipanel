@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Users - NiniPanel Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../styles.css">
+</head>
+
+<body>
+    <div class="dashboard-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <a href="../index.html" class="sidebar-brand">
+                <span>🚀</span>
+                <span class="text-gradient">NiniPanel</span>
+            </a>
+
+            <div
+                style="padding: var(--spacing-sm) var(--spacing-md); background: rgba(239, 68, 68, 0.1); border-radius: var(--radius-md); margin-bottom: var(--spacing-lg);">
+                <span style="color: var(--danger); font-weight: 600; font-size: 0.75rem;">👑 ADMIN PANEL</span>
+            </div>
+
+            <ul class="sidebar-menu">
+                <li><a href="index.html">📊 Dashboard</a></li>
+                <li><a href="orders.html">📦 Orders</a></li>
+                <li><a href="users.html" class="active">👥 Users</a></li>
+                <li><a href="servers.html">🖥️ Servers</a></li>
+                <li><a href="tickets.html">🎫 Tickets</a></li>
+                <li><a href="settings.html">⚙️ Settings</a></li>
+            </ul>
+
+            <div class="sidebar-section">
+                <ul class="sidebar-menu">
+                    <li><a href="../index.html">🌐 View Site</a></li>
+                    <li><a href="#" onclick="Auth.logout()">🚪 Logout</a></li>
+                </ul>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="page-header">
+                <h1>Manage Users</h1>
+                <p>Kelola semua user terdaftar</p>
+            </div>
+
+            <!-- Stats -->
+            <div class="stats-grid" style="grid-template-columns: repeat(3, 1fr); margin-bottom: var(--spacing-xl);">
+                <div class="card stat-card">
+                    <div class="stat-value" id="totalUsers">0</div>
+                    <div class="stat-label">Total Users</div>
+                </div>
+                <div class="card stat-card">
+                    <div class="stat-value" id="activeUsers">0</div>
+                    <div class="stat-label">Dengan Server</div>
+                </div>
+                <div class="card stat-card">
+                    <div class="stat-value" id="newUsers">0</div>
+                    <div class="stat-label">User Baru (7 hari)</div>
+                </div>
+            </div>
+
+            <!-- Users Table -->
+            <div class="card">
+                <div class="table-container">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>User</th>
+                                <th>Email</th>
+                                <th>WhatsApp</th>
+                                <th>Servers</th>
+                                <th>Role</th>
+                                <th>Joined</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersBody">
+                            <tr>
+                                <td colspan="6"
+                                    style="text-align: center; padding: var(--spacing-2xl); color: var(--text-secondary);">
+                                    Tidak ada user.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/storage.js"></script>
+    <script src="../js/auth.js"></script>
+    <script>
+        // Check admin
+        if (!Auth.requireAdmin()) {
+            // Redirect handled by requireAdmin
+        }
+
+        // Load users
+        function loadUsers() {
+            const users = Storage.getUsers().filter(u => u.role !== 'admin');
+            const servers = Storage.getServers();
+            const tbody = document.getElementById('usersBody');
+
+            // Stats
+            document.getElementById('totalUsers').textContent = users.length;
+
+            const usersWithServers = new Set(servers.map(s => s.userId));
+            document.getElementById('activeUsers').textContent = usersWithServers.size;
+
+            const weekAgo = new Date();
+            weekAgo.setDate(weekAgo.getDate() - 7);
+            const newUsers = users.filter(u => new Date(u.createdAt) > weekAgo);
+            document.getElementById('newUsers').textContent = newUsers.length;
+
+            if (users.length === 0) {
+                return;
+            }
+
+            tbody.innerHTML = users.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).map(user => {
+                const userServers = servers.filter(s => s.userId === user.id);
+                const initials = user.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+
+                return `
+          <tr>
+            <td>
+              <div class="d-flex align-center gap-1">
+                <div style="width: 36px; height: 36px; background: linear-gradient(135deg, var(--primary), var(--secondary)); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.75rem;">${initials}</div>
+                <span style="font-weight: 500;">${user.name}</span>
+              </div>
+            </td>
+            <td>${user.email}</td>
+            <td>${user.phone || '-'}</td>
+            <td>
+              ${userServers.length > 0 ? `
+                <span class="badge badge-success">${userServers.length} server</span>
+              ` : '<span style="color: var(--text-muted);">-</span>'}
+            </td>
+            <td><span class="badge badge-primary">User</span></td>
+            <td>${new Date(user.createdAt).toLocaleDateString('id-ID')}</td>
+          </tr>
+        `;
+            }).join('');
+        }
+
+        loadUsers();
+    </script>
+</body>
+
+</html>
