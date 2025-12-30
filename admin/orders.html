@@ -111,7 +111,6 @@
     </div>
 
     <script src="../js/api.js"></script>
-    <script src="../js/storage.js"></script>
     <script>
         // Check admin
         if (!API.isLoggedIn() || !API.isAdmin()) {
@@ -120,15 +119,27 @@
 
         let currentFilter = 'all';
         let currentOrderId = null;
+        let allOrders = [];
 
-        // Load orders
-        function loadOrders() {
-            const orders = Storage.getOrders();
+        // Load orders from API
+        async function loadOrders() {
+            try {
+                const result = await API.getOrders();
+                if (result.success) {
+                    allOrders = result.orders || [];
+                    renderOrders();
+                }
+            } catch (err) {
+                console.error('Failed to load orders:', err);
+            }
+        }
+
+        function renderOrders() {
             const tbody = document.getElementById('ordersBody');
 
-            let filtered = orders;
+            let filtered = allOrders;
             if (currentFilter !== 'all') {
-                filtered = orders.filter(o => o.status === currentFilter);
+                filtered = allOrders.filter(o => o.status === currentFilter);
             }
 
             filtered = filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
@@ -188,14 +199,12 @@
                 btn.classList.add('btn-primary');
                 btn.classList.add('active');
                 currentFilter = btn.dataset.filter;
-                loadOrders();
+                renderOrders();
             });
         });
 
         function openVerifyModal(orderId) {
-            const orders = Storage.getOrders();
-            const order = orders.find(o => o.id === orderId);
-
+            const order = allOrders.find(o => o.id === orderId);
             if (!order) return;
 
             currentOrderId = orderId;
@@ -219,12 +228,12 @@
             <div>${order.planName} (${order.durationLabel})</div>
           </div>
           <div>
-            <div style="font-size: 0.75rem; color: var(--text-muted);">Amount</div>
-            <div style="font-weight: 700; color: var(--success);">Rp ${order.amount.toLocaleString('id-ID')}</div>
+            <div style="font-size: 0.75rem; color: var(--text-muted);">RAM / Disk</div>
+            <div>${order.ram}MB / ${order.disk >= 1024 ? (order.disk / 1024) + 'GB' : order.disk + 'MB'}</div>
           </div>
           <div>
-            <div style="font-size: 0.75rem; color: var(--text-muted);">Tanggal Order</div>
-            <div>${new Date(order.createdAt).toLocaleString('id-ID')}</div>
+            <div style="font-size: 0.75rem; color: var(--text-muted);">Amount</div>
+            <div style="font-weight: 700; color: var(--success);">Rp ${order.amount.toLocaleString('id-ID')}</div>
           </div>
         </div>
         ${order.notes ? `
@@ -249,60 +258,46 @@
             document.getElementById(id).classList.remove('active');
         }
 
-        function approveOrder() {
+        async function approveOrder() {
             if (!currentOrderId) return;
 
-            const orders = Storage.getOrders();
-            const order = orders.find(o => o.id === currentOrderId);
+            try {
+                const result = await API.verifyOrder(currentOrderId, 'approve');
 
-            if (!order) return;
-
-            // Update order status
-            Storage.updateOrder(currentOrderId, { status: 'active' });
-
-            // Calculate expiry
-            const durationDays = {
-                daily: 1,
-                weekly: 7,
-                monthly: 30
-            };
-            const expiresAt = new Date();
-            expiresAt.setDate(expiresAt.getDate() + (durationDays[order.duration] || 1));
-
-            // Create server
-            Storage.addServer({
-                userId: order.userId,
-                orderId: order.id,
-                name: `VPS-${order.id.substring(0, 6).toUpperCase()}`,
-                planName: order.planName,
-                plan: order.plan,
-                ram: order.ram,
-                disk: order.disk,
-                cpu: order.cpu,
-                ip: `192.168.1.${Math.floor(Math.random() * 254 + 1)}`,
-                status: 'online',
-                expiresAt: expiresAt.toISOString()
-            });
-
-            closeModal('verifyModal');
-            loadOrders();
-            alert('Order berhasil diapprove! Server telah dibuat.');
-        }
-
-        function rejectOrder() {
-            if (!currentOrderId) return;
-
-            if (confirm('Yakin ingin menolak order ini?')) {
-                Storage.updateOrder(currentOrderId, { status: 'cancelled' });
-                closeModal('verifyModal');
-                loadOrders();
+                if (result.success) {
+                    closeModal('verifyModal');
+                    alert('Order berhasil diapprove! Server + Docker container telah dibuat.');
+                    loadOrders();
+                } else {
+                    throw new Error(result.message || 'Gagal approve order');
+                }
+            } catch (err) {
+                alert('Error: ' + err.message);
             }
         }
 
-        function cancelOrder(orderId) {
+        async function rejectOrder() {
+            if (!currentOrderId) return;
+
+            if (confirm('Yakin ingin menolak order ini?')) {
+                try {
+                    await API.verifyOrder(currentOrderId, 'reject');
+                    closeModal('verifyModal');
+                    loadOrders();
+                } catch (err) {
+                    alert('Error: ' + err.message);
+                }
+            }
+        }
+
+        async function cancelOrder(orderId) {
             if (confirm('Yakin ingin membatalkan order ini?')) {
-                Storage.updateOrder(orderId, { status: 'cancelled' });
-                loadOrders();
+                try {
+                    await API.verifyOrder(orderId, 'reject');
+                    loadOrders();
+                } catch (err) {
+                    alert('Error: ' + err.message);
+                }
             }
         }
 
@@ -310,7 +305,7 @@
         const urlParams = new URLSearchParams(window.location.search);
         const verifyId = urlParams.get('verify');
         if (verifyId) {
-            openVerifyModal(verifyId);
+            setTimeout(() => openVerifyModal(verifyId), 500);
         }
 
         loadOrders();
