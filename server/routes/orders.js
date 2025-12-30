@@ -60,31 +60,55 @@ router.get('/:id', authenticate, (req, res) => {
 // Create order
 router.post('/', authenticate, (req, res) => {
     try {
-        const { plan, duration, notes } = req.body;
-
-        // Get plan details from settings
-        const config = settings.getAll()[0];
-        const planDetails = config?.plans?.[plan];
-
-        if (!planDetails) {
-            return res.status(400).json({ success: false, message: 'Invalid plan' });
-        }
+        const { plan, duration, notes, customRam, customDisk } = req.body;
 
         const durationLabels = { daily: '1 Hari', weekly: '7 Hari', monthly: '30 Hari' };
-        const amount = planDetails[duration] || planDetails.daily;
+
+        let planName, ram, disk, cpu, amount;
+
+        if (plan === 'custom') {
+            // Custom plan - price is Rp 25 per MB RAM per month
+            ram = parseInt(customRam) || 100;
+            disk = parseInt(customDisk) || 500;
+            cpu = Math.ceil(ram / 100); // 1 CPU per 100MB RAM
+
+            // Calculate price: Rp 25 per MB RAM per month
+            const monthlyPrice = ram * 25;
+            const prices = {
+                daily: Math.ceil(monthlyPrice / 30),
+                weekly: Math.ceil(monthlyPrice / 4),
+                monthly: monthlyPrice
+            };
+            amount = prices[duration] || prices.monthly;
+            planName = `Custom (${ram}MB RAM)`;
+        } else {
+            // Get plan details from settings
+            const config = settings.getAll()[0];
+            const planDetails = config?.plans?.[plan];
+
+            if (!planDetails) {
+                return res.status(400).json({ success: false, message: 'Invalid plan' });
+            }
+
+            planName = planDetails.name;
+            ram = planDetails.ram;
+            disk = planDetails.disk;
+            cpu = planDetails.cpu;
+            amount = planDetails[duration] || planDetails.daily;
+        }
 
         const order = orders.create({
             userId: req.user.id,
             customerName: req.user.name,
             customerEmail: req.user.email,
-            customerPhone: req.user.phone,
+            customerPhone: req.user.phone || '',
             plan,
-            planName: planDetails.name,
+            planName,
             duration,
             durationLabel: durationLabels[duration] || '1 Hari',
-            ram: planDetails.ram,
-            disk: planDetails.disk,
-            cpu: planDetails.cpu,
+            ram,
+            disk,
+            cpu,
             amount,
             status: 'pending',
             notes: notes || ''
@@ -126,8 +150,8 @@ router.post('/:id/proof', authenticate, upload.single('proof'), (req, res) => {
     }
 });
 
-// Verify order (admin only)
-router.put('/:id/verify', authenticate, adminOnly, (req, res) => {
+// Verify order (admin only) - Creates server + container on approval
+router.put('/:id/verify', authenticate, adminOnly, async (req, res) => {
     try {
         const { action } = req.body; // 'approve' or 'reject'
         const order = orders.getById(req.params.id);
@@ -139,11 +163,67 @@ router.put('/:id/verify', authenticate, adminOnly, (req, res) => {
         if (action === 'approve') {
             orders.update(order.id, { status: 'active' });
 
-            // Server will be created by servers route
+            // Auto-create server with Docker container
+            const containerManager = require('../services/container');
+            const { servers } = require('../utils/database');
+
+            // Calculate expiry
+            const durationDays = { daily: 1, weekly: 7, monthly: 30 };
+            const expiresAt = new Date();
+            expiresAt.setDate(expiresAt.getDate() + (durationDays[order.duration] || 1));
+
+            // Create server record
+            const serverData = {
+                userId: order.userId,
+                orderId: order.id,
+                name: `VPS-${order.id.substring(0, 6).toUpperCase()}`,
+                plan: order.plan,
+                planName: order.planName,
+                ram: order.ram,
+                disk: order.disk,
+                cpu: order.cpu,
+                status: 'creating',
+                expiresAt: expiresAt.toISOString()
+            };
+
+            const server = servers.create(serverData);
+
+            // Create Docker container
+            const dockerAvailable = await containerManager.isAvailable();
+
+            if (dockerAvailable) {
+                try {
+                    const containerId = await containerManager.createContainer(
+                        server.id,
+                        order.plan,
+                        server.name,
+                        order.ram,
+                        order.disk
+                    );
+
+                    servers.update(server.id, {
+                        containerId,
+                        status: 'online',
+                        ip: '127.0.0.1'
+                    });
+                } catch (err) {
+                    console.error('Docker error:', err.message);
+                    servers.update(server.id, { status: 'error', error: err.message });
+                }
+            } else {
+                // Simulation mode
+                servers.update(server.id, {
+                    status: 'online',
+                    ip: `192.168.1.${Math.floor(Math.random() * 254) + 1}`,
+                    simulation: true
+                });
+            }
+
             res.json({
                 success: true,
-                message: 'Order approved',
-                order: orders.getById(order.id)
+                message: 'Order approved and server created',
+                order: orders.getById(order.id),
+                server: servers.getById(server.id)
             });
         } else {
             orders.update(order.id, { status: 'cancelled' });

@@ -112,11 +112,12 @@ router.post('/', authenticate, adminOnly, async (req, res) => {
                 const containerId = await containerManager.createContainer(
                     server.id,
                     order.plan,
-                    server.name
+                    server.name,
+                    order.ram,  // Pass RAM for custom plans
+                    order.disk  // Pass disk for custom plans
                 );
 
-                await containerManager.startContainer(containerId);
-
+                // Container is already started in createContainer
                 servers.update(server.id, {
                     containerId,
                     status: 'online',

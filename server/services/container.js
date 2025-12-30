@@ -8,16 +8,25 @@ const Docker = require('dockerode');
 // Connect to Docker
 const docker = new Docker({ socketPath: process.env.DOCKER_SOCKET || '/var/run/docker.sock' });
 
-// Container image (using Alpine Linux for lightweight containers)
-const DEFAULT_IMAGE = 'alpine:latest';
+// Container image (using Node.js Alpine for bot hosting)
+const DEFAULT_IMAGE = 'node:18-alpine';
 
-// Plan to Docker resource limits
+// Plan to Docker resource limits (memory in bytes, cpuQuota in microseconds per 100ms)
 const PLAN_LIMITS = {
-    starter: { memory: 20 * 1024 * 1024, cpuQuota: 10000 },   // 20MB, 10% CPU
-    basic: { memory: 50 * 1024 * 1024, cpuQuota: 25000 },     // 50MB, 25% CPU
-    standard: { memory: 100 * 1024 * 1024, cpuQuota: 50000 }, // 100MB, 50% CPU
-    premium: { memory: 200 * 1024 * 1024, cpuQuota: 100000 }  // 200MB, 100% CPU
+    starter: { memory: 20 * 1024 * 1024, cpuQuota: 10000 },        // 20MB, 10% CPU
+    basic: { memory: 50 * 1024 * 1024, cpuQuota: 25000 },          // 50MB, 25% CPU
+    standard: { memory: 100 * 1024 * 1024, cpuQuota: 50000 },      // 100MB, 50% CPU
+    premium: { memory: 200 * 1024 * 1024, cpuQuota: 100000 },      // 200MB, 100% CPU
+    superpremium: { memory: 500 * 1024 * 1024, cpuQuota: 200000 }  // 500MB, 200% CPU (4 cores)
 };
+
+// Get limits for custom plan
+function getCustomLimits(ram, cpu) {
+    return {
+        memory: (ram || 100) * 1024 * 1024,
+        cpuQuota: Math.min((cpu || 1) * 50000, 400000) // Max 4 CPUs
+    };
+}
 
 class ContainerManager {
     // Check if Docker is available
@@ -50,15 +59,26 @@ class ContainerManager {
     }
 
     // Create new container
-    async createContainer(serverId, plan, serverName) {
-        const limits = PLAN_LIMITS[plan] || PLAN_LIMITS.starter;
+    async createContainer(serverId, plan, serverName, customRam = null, customDisk = null) {
+        // Get limits based on plan or custom values
+        let limits;
+        if (plan === 'custom' && customRam) {
+            const cpu = Math.ceil(customRam / 100);
+            limits = getCustomLimits(customRam, cpu);
+        } else {
+            limits = PLAN_LIMITS[plan] || PLAN_LIMITS.starter;
+        }
 
         await this.ensureImage();
+
+        // Calculate disk limit (in bytes)
+        const diskLimit = (customDisk || 500) * 1024 * 1024;
 
         const container = await docker.createContainer({
             name: `ninipanel-${serverId}`,
             Image: DEFAULT_IMAGE,
-            Cmd: ['/bin/sh', '-c', 'while true; do sleep 3600; done'],
+            Cmd: ['sh', '-c', 'cd /home/container && tail -f /dev/null'],
+            WorkingDir: '/home/container',
             Tty: true,
             OpenStdin: true,
             Labels: {
@@ -68,11 +88,26 @@ class ContainerManager {
             },
             HostConfig: {
                 Memory: limits.memory,
+                MemorySwap: limits.memory, // No swap
                 CpuQuota: limits.cpuQuota,
                 CpuPeriod: 100000,
-                RestartPolicy: { Name: 'unless-stopped' }
+                RestartPolicy: { Name: 'unless-stopped' },
+                // Storage limit via tmpfs (optional)
+                Tmpfs: {
+                    '/tmp': `size=${Math.floor(diskLimit / 10)}`
+                }
             }
         });
+
+        // Create working directory and set permissions
+        await container.start();
+        const docker2 = this.getDocker();
+        const exec = await container.exec({
+            Cmd: ['sh', '-c', 'mkdir -p /home/container && chmod 777 /home/container'],
+            AttachStdout: true,
+            AttachStderr: true
+        });
+        await exec.start();
 
         return container.id;
     }

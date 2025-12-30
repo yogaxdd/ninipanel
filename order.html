@@ -228,6 +228,40 @@
                                     <span>🔄 4 CPU</span>
                                 </div>
                             </div>
+
+                            <div class="plan-option" data-plan="custom" style="border-style: dashed;">
+                                <div class="plan-header">
+                                    <span class="plan-name">🛠️ Custom</span>
+                                    <span class="badge badge-secondary">Sesuaikan</span>
+                                </div>
+                                <div class="plan-specs">
+                                    <span>RAM & Storage bebas</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Custom Plan Config -->
+                        <div id="customConfig"
+                            style="display: none; margin-top: var(--spacing-lg); padding: var(--spacing-lg); background: rgba(99, 102, 241, 0.1); border-radius: var(--radius-md);">
+                            <h4 style="margin-bottom: var(--spacing-md);">🛠️ Konfigurasi Custom</h4>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-md);">
+                                <div class="form-group" style="margin: 0;">
+                                    <label class="form-label">RAM (MB)</label>
+                                    <input type="number" class="form-input" id="customRam" min="20" max="2048"
+                                        value="100" placeholder="100">
+                                    <small style="color: var(--text-muted);">Min 20MB, Max 2048MB</small>
+                                </div>
+                                <div class="form-group" style="margin: 0;">
+                                    <label class="form-label">Storage (MB)</label>
+                                    <input type="number" class="form-input" id="customDisk" min="100" max="10240"
+                                        value="500" placeholder="500">
+                                    <small style="color: var(--text-muted);">Min 100MB, Max 10GB</small>
+                                </div>
+                            </div>
+                            <p
+                                style="margin-top: var(--spacing-md); color: var(--text-secondary); font-size: 0.875rem;">
+                                💰 Harga: <strong>Rp 25 per MB RAM per bulan</strong>
+                            </p>
                         </div>
                     </div>
 
@@ -334,7 +368,8 @@
             basic: { name: 'Basic', ram: 50, disk: 250, cpu: 1, daily: 50, weekly: 300, monthly: 1000 },
             standard: { name: 'Standard', ram: 100, disk: 500, cpu: 2, daily: 100, weekly: 700, monthly: 2500 },
             premium: { name: 'Premium', ram: 200, disk: 1024, cpu: 2, daily: 170, weekly: 1250, monthly: 5000 },
-            superpremium: { name: 'Super Premium', ram: 500, disk: 2048, cpu: 4, daily: 350, weekly: 2500, monthly: 10000 }
+            superpremium: { name: 'Super Premium', ram: 500, disk: 2048, cpu: 4, daily: 350, weekly: 2500, monthly: 10000 },
+            custom: { name: 'Custom', ram: 100, disk: 500, cpu: 1, daily: 0, weekly: 0, monthly: 0 }
         };
 
         const durationLabels = {
@@ -351,12 +386,56 @@
         const paramPlan = urlParams.get('plan');
         const paramPeriod = urlParams.get('period');
 
+        // Custom plan config
+        const customConfig = document.getElementById('customConfig');
+        const customRamInput = document.getElementById('customRam');
+        const customDiskInput = document.getElementById('customDisk');
+
+        // Update custom prices when inputs change
+        customRamInput?.addEventListener('input', updateCustomPrices);
+        customDiskInput?.addEventListener('input', updateCustomPrices);
+
+        function updateCustomPrices() {
+            const ram = parseInt(customRamInput.value) || 100;
+            const monthlyPrice = ram * 25;
+            plans.custom = {
+                name: `Custom (${ram}MB)`,
+                ram: ram,
+                disk: parseInt(customDiskInput.value) || 500,
+                cpu: Math.ceil(ram / 100),
+                daily: Math.ceil(monthlyPrice / 30),
+                weekly: Math.ceil(monthlyPrice / 4),
+                monthly: monthlyPrice
+            };
+            if (selectedPlan === 'custom') {
+                updatePrices();
+                updateSummary();
+            }
+        }
+
         // Plan selection
         document.querySelectorAll('.plan-option').forEach(el => {
             el.addEventListener('click', () => {
                 document.querySelectorAll('.plan-option').forEach(p => p.classList.remove('selected'));
                 el.classList.add('selected');
                 selectedPlan = el.dataset.plan;
+
+                // Show/hide custom config
+                if (selectedPlan === 'custom') {
+                    customConfig.style.display = 'block';
+                    updateCustomPrices();
+                } else {
+                    customConfig.style.display = 'none';
+                }
+
+                // Show/hide custom config
+                if (selectedPlan === 'custom') {
+                    customConfig.style.display = 'block';
+                    updateCustomPrices();
+                } else {
+                    customConfig.style.display = 'none';
+                }
+
                 updatePrices();
                 updateSummary();
             });
@@ -426,7 +505,7 @@
         }
 
         // Checkout button
-        document.getElementById('checkoutBtn').addEventListener('click', () => {
+        document.getElementById('checkoutBtn').addEventListener('click', async () => {
             const name = document.getElementById('name').value;
             const email = document.getElementById('email').value;
             const phone = document.getElementById('phone').value;
@@ -442,31 +521,45 @@
                 return;
             }
 
+            // Must be logged in to order
+            if (!API.isLoggedIn()) {
+                alert('Silakan login terlebih dahulu untuk melakukan order.');
+                window.location.href = 'auth/login.html';
+                return;
+            }
+
             const plan = plans[selectedPlan];
-            const amount = plan[selectedDuration];
 
-            // Create order
-            const order = Storage.addOrder({
-                userId: API.isLoggedIn() ? API.getUser().id : null,
-                customerName: name,
-                customerEmail: email,
-                customerPhone: phone,
-                notes: notes,
-                plan: selectedPlan,
-                planName: plan.name,
-                duration: selectedDuration,
-                durationLabel: durationLabels[selectedDuration],
-                ram: plan.ram,
-                disk: plan.disk,
-                cpu: plan.cpu,
-                amount: amount
-            });
+            // Create order via API
+            const checkoutBtn = document.getElementById('checkoutBtn');
+            checkoutBtn.disabled = true;
+            checkoutBtn.textContent = 'Processing...';
 
-            if (order) {
-                // Redirect to payment page
-                window.location.href = `payment.html?order=${order.id}`;
-            } else {
-                alert('Gagal membuat order. Silakan coba lagi.');
+            try {
+                const orderData = {
+                    plan: selectedPlan,
+                    duration: selectedDuration,
+                    notes: notes
+                };
+
+                // Add custom plan data
+                if (selectedPlan === 'custom') {
+                    orderData.customRam = customRamInput.value;
+                    orderData.customDisk = customDiskInput.value;
+                }
+
+                const result = await API.createOrder(orderData);
+
+                if (result.success) {
+                    // Redirect to payment page
+                    window.location.href = `payment.html?order=${result.order.id}`;
+                } else {
+                    throw new Error(result.message || 'Gagal membuat order');
+                }
+            } catch (err) {
+                alert('Gagal membuat order: ' + err.message);
+                checkoutBtn.disabled = false;
+                checkoutBtn.textContent = 'Lanjut Pembayaran';
             }
         });
     </script>
