@@ -82,9 +82,16 @@ router.post('/', authenticate, (req, res) => {
             amount = prices[duration] || prices.monthly;
             planName = `Custom (${ram}MB RAM)`;
         } else {
-            // Get plan details from settings
-            const config = settings.getAll()[0];
-            const planDetails = config?.plans?.[plan];
+            // Hardcoded plan definitions
+            const PLANS = {
+                starter: { name: 'Starter', ram: 20, disk: 100, cpu: 1, daily: 25, weekly: 150, monthly: 500 },
+                basic: { name: 'Basic', ram: 50, disk: 250, cpu: 1, daily: 50, weekly: 300, monthly: 1000 },
+                standard: { name: 'Standard', ram: 100, disk: 500, cpu: 2, daily: 100, weekly: 700, monthly: 2500 },
+                premium: { name: 'Premium', ram: 200, disk: 1024, cpu: 2, daily: 170, weekly: 1250, monthly: 5000 },
+                superpremium: { name: 'Super Premium', ram: 500, disk: 2048, cpu: 4, daily: 350, weekly: 2500, monthly: 10000 }
+            };
+
+            const planDetails = PLANS[plan];
 
             if (!planDetails) {
                 return res.status(400).json({ success: false, message: 'Invalid plan' });
