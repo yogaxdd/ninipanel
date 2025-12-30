@@ -207,12 +207,25 @@
                             <div class="plan-option" data-plan="premium">
                                 <div class="plan-header">
                                     <span class="plan-name">Premium</span>
-                                    <span class="badge badge-warning">Best</span>
                                 </div>
                                 <div class="plan-specs">
                                     <span>💾 200MB</span>
                                     <span>📁 1GB</span>
                                     <span>🔄 2 CPU</span>
+                                </div>
+                            </div>
+
+                            <div class="plan-option" data-plan="superpremium" style="border-color: var(--accent);">
+                                <div class="plan-header">
+                                    <span class="plan-name" style="color: var(--accent);">Super Premium</span>
+                                    <span class="badge"
+                                        style="background: linear-gradient(135deg, var(--accent), var(--primary)); color: white;">👑
+                                        Terbaik</span>
+                                </div>
+                                <div class="plan-specs">
+                                    <span>💾 500MB</span>
+                                    <span>📁 2GB</span>
+                                    <span>🔄 4 CPU</span>
                                 </div>
                             </div>
                         </div>
@@ -312,15 +325,16 @@
         </div>
     </section>
 
+    <script src="js/api.js"></script>
     <script src="js/storage.js"></script>
-    <script src="js/auth.js"></script>
     <script>
-        // Plans data
+        // Plans data - Updated pricing
         const plans = {
-            starter: { name: 'Starter', ram: 20, disk: 100, cpu: 1, daily: 500, weekly: 3000, monthly: 10000 },
-            basic: { name: 'Basic', ram: 50, disk: 250, cpu: 1, daily: 1000, weekly: 6000, monthly: 20000 },
-            standard: { name: 'Standard', ram: 100, disk: 500, cpu: 2, daily: 2000, weekly: 12000, monthly: 40000 },
-            premium: { name: 'Premium', ram: 200, disk: 1024, cpu: 2, daily: 4000, weekly: 25000, monthly: 80000 }
+            starter: { name: 'Starter', ram: 20, disk: 100, cpu: 1, daily: 25, weekly: 150, monthly: 500 },
+            basic: { name: 'Basic', ram: 50, disk: 250, cpu: 1, daily: 50, weekly: 300, monthly: 1000 },
+            standard: { name: 'Standard', ram: 100, disk: 500, cpu: 2, daily: 100, weekly: 700, monthly: 2500 },
+            premium: { name: 'Premium', ram: 200, disk: 1024, cpu: 2, daily: 170, weekly: 1250, monthly: 5000 },
+            superpremium: { name: 'Super Premium', ram: 500, disk: 2048, cpu: 4, daily: 350, weekly: 2500, monthly: 10000 }
         };
 
         const durationLabels = {
@@ -402,13 +416,13 @@
         }
 
         // Fill user data if logged in
-        if (Auth.isLoggedIn()) {
-            const user = Auth.getCurrentUser();
+        if (API.isLoggedIn()) {
+            const user = API.getUser();
             document.getElementById('name').value = user.name || '';
             document.getElementById('email').value = user.email || '';
             document.getElementById('phone').value = user.phone || '';
             document.getElementById('loginBtn').textContent = 'Dashboard';
-            document.getElementById('loginBtn').href = 'client/dashboard.html';
+            document.getElementById('loginBtn').href = user.role === 'admin' ? 'admin/index.html' : 'client/dashboard.html';
         }
 
         // Checkout button
@@ -433,7 +447,7 @@
 
             // Create order
             const order = Storage.addOrder({
-                userId: Auth.isLoggedIn() ? Auth.getCurrentUser().id : null,
+                userId: API.isLoggedIn() ? API.getUser().id : null,
                 customerName: name,
                 customerEmail: email,
                 customerPhone: phone,
