@@ -79,7 +79,7 @@
                 <ul class="sidebar-menu">
                     <li><a href="billing.html">💳 Billing</a></li>
                     <li><a href="support.html">🎫 Support</a></li>
-                    <li><a href="#" onclick="Auth.logout()">🚪 Logout</a></li>
+                    <li><a href="#" onclick="API.logout()">🚪 Logout</a></li>
                 </ul>
             </div>
         </aside>
@@ -109,15 +109,15 @@
         </main>
     </div>
 
+    <script src="../js/api.js"></script>
     <script src="../js/storage.js"></script>
-    <script src="../js/auth.js"></script>
     <script>
         // Check login
-        if (!Auth.requireLogin()) {
-            // Redirect handled by requireLogin
+        if (!API.isLoggedIn()) {
+            window.location.href = '../auth/login.html';
         }
 
-        const user = Auth.getCurrentUser();
+        const user = API.getUser();
         let selectedServer = null;
         let commandHistory = [];
         let historyIndex = -1;
