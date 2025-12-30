@@ -1,13 +1,16 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>NiniPanel - VPS Hosting Terjangkau</title>
-  <meta name="description" content="NiniPanel menyediakan layanan VPS mini dengan harga terjangkau. Mulai dari Rp 500/hari.">
+  <meta name="description"
+    content="NiniPanel menyediakan layanan VPS mini dengan harga terjangkau. Mulai dari Rp 500/hari.">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
 </head>
+
 <body>
   <!-- Navigation -->
   <nav class="navbar" id="navbar">
@@ -16,19 +19,19 @@
         <div class="logo">🚀</div>
         <span class="text-gradient">NiniPanel</span>
       </a>
-      
+
       <ul class="navbar-menu">
         <li><a href="#features">Fitur</a></li>
         <li><a href="#pricing">Harga</a></li>
         <li><a href="#testimonials">Testimoni</a></li>
         <li><a href="#faq">FAQ</a></li>
       </ul>
-      
-      <div class="navbar-actions">
+
+      <div class="navbar-actions" id="navbarActions">
         <a href="auth/login.html" class="btn btn-secondary btn-sm">Masuk</a>
         <a href="auth/register.html" class="btn btn-primary btn-sm">Daftar</a>
       </div>
-      
+
       <button class="mobile-menu-btn" id="mobileMenuBtn">☰</button>
     </div>
   </nav>
@@ -41,15 +44,15 @@
           <span class="dot"></span>
           <span>100% Uptime Guaranteed</span>
         </div>
-        
+
         <h1>VPS Mini dengan <span class="text-gradient">Harga Terjangkau</span></h1>
         <p>Mulai bisnis hosting Anda dengan VPS mini yang powerful. Performa tinggi, harga rendah, support 24/7.</p>
-        
+
         <div class="hero-buttons">
           <a href="#pricing" class="btn btn-primary btn-lg">Lihat Paket</a>
           <a href="#features" class="btn btn-secondary btn-lg">Pelajari Lebih</a>
         </div>
-        
+
         <div class="hero-stats">
           <div class="stat-item">
             <div class="number">99.9%</div>
@@ -75,38 +78,38 @@
         <h2>Kenapa Pilih <span class="text-gradient">NiniPanel?</span></h2>
         <p>Kami menyediakan layanan VPS dengan fitur lengkap dan harga yang sangat terjangkau.</p>
       </div>
-      
+
       <div class="features-grid">
         <div class="card feature-card">
           <div class="icon">⚡</div>
           <h3>Performa Tinggi</h3>
           <p>Server dengan SSD NVMe untuk kecepatan maksimal. Proses data lebih cepat dan responsif.</p>
         </div>
-        
+
         <div class="card feature-card">
           <div class="icon">🛡️</div>
           <h3>DDoS Protection</h3>
           <p>Perlindungan DDoS tingkat enterprise untuk menjaga server Anda tetap online.</p>
         </div>
-        
+
         <div class="card feature-card">
           <div class="icon">🔧</div>
           <h3>Panel Mudah</h3>
           <p>Control panel yang user-friendly. Kelola VPS Anda dengan mudah tanpa ribet.</p>
         </div>
-        
+
         <div class="card feature-card">
           <div class="icon">💬</div>
           <h3>Support 24/7</h3>
           <p>Tim support kami siap membantu kapan saja. Respon cepat via WhatsApp.</p>
         </div>
-        
+
         <div class="card feature-card">
           <div class="icon">🔄</div>
           <h3>Instant Setup</h3>
           <p>VPS langsung aktif setelah pembayaran dikonfirmasi. Tidak perlu menunggu lama.</p>
         </div>
-        
+
         <div class="card feature-card">
           <div class="icon">💰</div>
           <h3>Harga Terjangkau</h3>
@@ -123,13 +126,13 @@
         <h2>Pilih Paket <span class="text-gradient">VPS Anda</span></h2>
         <p>Tersedia berbagai pilihan paket yang bisa disesuaikan dengan kebutuhan Anda.</p>
       </div>
-      
+
       <div class="pricing-toggle">
         <button class="active" data-period="daily">Harian</button>
         <button data-period="weekly">Mingguan</button>
         <button data-period="monthly">Bulanan</button>
       </div>
-      
+
       <div class="pricing-grid">
         <!-- Starter Plan -->
         <div class="card pricing-card" data-plan="starter">
@@ -138,8 +141,8 @@
             <span class="spec">💾 20MB RAM</span>
             <span class="spec">📁 100MB Disk</span>
           </div>
-          <div class="price" data-daily="500" data-weekly="3000" data-monthly="10000">
-            Rp 500<span>/hari</span>
+          <div class="price" data-daily="25" data-weekly="150" data-monthly="500">
+            Rp 500<span>/bulan</span>
           </div>
           <ul class="features-list">
             <li>1 vCPU Core</li>
@@ -150,7 +153,7 @@
           </ul>
           <a href="order.html?plan=starter" class="btn btn-secondary">Pilih Paket</a>
         </div>
-        
+
         <!-- Basic Plan -->
         <div class="card pricing-card" data-plan="basic">
           <div class="plan-name">Basic</div>
@@ -158,8 +161,8 @@
             <span class="spec">💾 50MB RAM</span>
             <span class="spec">📁 250MB Disk</span>
           </div>
-          <div class="price" data-daily="1000" data-weekly="6000" data-monthly="20000">
-            Rp 1.000<span>/hari</span>
+          <div class="price" data-daily="50" data-weekly="300" data-monthly="1000">
+            Rp 1.000<span>/bulan</span>
           </div>
           <ul class="features-list">
             <li>1 vCPU Core</li>
@@ -170,7 +173,7 @@
           </ul>
           <a href="order.html?plan=basic" class="btn btn-secondary">Pilih Paket</a>
         </div>
-        
+
         <!-- Standard Plan (Popular) -->
         <div class="card pricing-card popular" data-plan="standard">
           <div class="plan-name">Standard</div>
@@ -178,8 +181,8 @@
             <span class="spec">💾 100MB RAM</span>
             <span class="spec">📁 500MB Disk</span>
           </div>
-          <div class="price" data-daily="2000" data-weekly="12000" data-monthly="40000">
-            Rp 2.000<span>/hari</span>
+          <div class="price" data-daily="100" data-weekly="700" data-monthly="2500">
+            Rp 2.500<span>/bulan</span>
           </div>
           <ul class="features-list">
             <li>2 vCPU Cores</li>
@@ -190,7 +193,7 @@
           </ul>
           <a href="order.html?plan=standard" class="btn btn-primary">Pilih Paket</a>
         </div>
-        
+
         <!-- Premium Plan -->
         <div class="card pricing-card" data-plan="premium">
           <div class="plan-name">Premium</div>
@@ -198,8 +201,8 @@
             <span class="spec">💾 200MB RAM</span>
             <span class="spec">📁 1GB Disk</span>
           </div>
-          <div class="price" data-daily="4000" data-weekly="25000" data-monthly="80000">
-            Rp 4.000<span>/hari</span>
+          <div class="price" data-daily="170" data-weekly="1250" data-monthly="5000">
+            Rp 5.000<span>/bulan</span>
           </div>
           <ul class="features-list">
             <li>2 vCPU Cores</li>
@@ -209,6 +212,31 @@
             <li>VIP Support</li>
           </ul>
           <a href="order.html?plan=premium" class="btn btn-secondary">Pilih Paket</a>
+        </div>
+
+        <!-- Super Premium Plan -->
+        <div class="card pricing-card" data-plan="superpremium"
+          style="border-color: var(--accent); position: relative;">
+          <div
+            style="position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: linear-gradient(135deg, var(--accent), var(--primary)); padding: 4px 12px; border-radius: 12px; font-size: 0.7rem; font-weight: 700; color: white;">
+            👑 TERBAIK</div>
+          <div class="plan-name" style="color: var(--accent);">Super Premium</div>
+          <div class="plan-specs">
+            <span class="spec">💾 500MB RAM</span>
+            <span class="spec">📁 2GB Disk</span>
+          </div>
+          <div class="price" data-daily="350" data-weekly="2500" data-monthly="10000">
+            Rp 10.000<span>/bulan</span>
+          </div>
+          <ul class="features-list">
+            <li>4 vCPU Cores</li>
+            <li>Unlimited Bandwidth</li>
+            <li>1 IPv4 Address</li>
+            <li>Full Panel Access</li>
+            <li>Priority 24/7 Support</li>
+            <li>⭐ Terbaik buat Bot WA/Tele</li>
+          </ul>
+          <a href="order.html?plan=superpremium" class="btn btn-primary">Pilih Paket</a>
         </div>
       </div>
     </div>
@@ -221,10 +249,11 @@
         <h2>Apa Kata <span class="text-gradient">Pelanggan Kami?</span></h2>
         <p>Ribuan pelanggan puas dengan layanan NiniPanel.</p>
       </div>
-      
+
       <div class="testimonials-grid">
         <div class="card testimonial-card">
-          <p class="quote">"VPS nya murah banget tapi kualitas ga murahan. Server stabil, support cepat respon. Recommended!"</p>
+          <p class="quote">"VPS nya murah banget tapi kualitas ga murahan. Server stabil, support cepat respon.
+            Recommended!"</p>
           <div class="author">
             <div class="avatar">AR</div>
             <div class="author-info">
@@ -233,7 +262,7 @@
             </div>
           </div>
         </div>
-        
+
         <div class="card testimonial-card">
           <p class="quote">"Buat hosting bot WhatsApp mantap banget. Uptime 100% selama 3 bulan pake. Worth it!"</p>
           <div class="author">
@@ -244,9 +273,10 @@
             </div>
           </div>
         </div>
-        
+
         <div class="card testimonial-card">
-          <p class="quote">"Panel nya gampang dipake, cocok buat pemula kayak saya. Support nya juga ramah dan helpful."</p>
+          <p class="quote">"Panel nya gampang dipake, cocok buat pemula kayak saya. Support nya juga ramah dan helpful."
+          </p>
           <div class="author">
             <div class="avatar">RW</div>
             <div class="author-info">
@@ -266,7 +296,7 @@
         <h2>Pertanyaan <span class="text-gradient">yang Sering Ditanyakan</span></h2>
         <p>Belum menemukan jawaban? Hubungi kami via WhatsApp.</p>
       </div>
-      
+
       <div class="faq-list">
         <div class="faq-item">
           <button class="faq-question">
@@ -274,47 +304,53 @@
             <span class="icon">+</span>
           </button>
           <div class="faq-answer">
-            <p>VPS Mini adalah Virtual Private Server dengan spesifikasi rendah yang cocok untuk project kecil seperti hosting bot, website sederhana, atau aplikasi ringan. Meskipun resource terbatas, performanya tetap stabil dan reliabel.</p>
+            <p>VPS Mini adalah Virtual Private Server dengan spesifikasi rendah yang cocok untuk project kecil seperti
+              hosting bot, website sederhana, atau aplikasi ringan. Meskipun resource terbatas, performanya tetap stabil
+              dan reliabel.</p>
           </div>
         </div>
-        
+
         <div class="faq-item">
           <button class="faq-question">
             <span>Bagaimana cara pembayaran?</span>
             <span class="icon">+</span>
           </button>
           <div class="faq-answer">
-            <p>Kami menerima pembayaran via QRIS (semua e-wallet dan bank) dan transfer bank. Setelah pembayaran, upload bukti bayar dan VPS akan aktif dalam hitungan menit setelah dikonfirmasi.</p>
+            <p>Kami menerima pembayaran via QRIS (semua e-wallet dan bank) dan transfer bank. Setelah pembayaran, upload
+              bukti bayar dan VPS akan aktif dalam hitungan menit setelah dikonfirmasi.</p>
           </div>
         </div>
-        
+
         <div class="faq-item">
           <button class="faq-question">
             <span>Berapa lama VPS aktif setelah bayar?</span>
             <span class="icon">+</span>
           </button>
           <div class="faq-answer">
-            <p>VPS akan aktif dalam 5-30 menit setelah pembayaran dikonfirmasi oleh admin. Kami usahakan secepat mungkin agar Anda bisa langsung menggunakan layanan.</p>
+            <p>VPS akan aktif dalam 5-30 menit setelah pembayaran dikonfirmasi oleh admin. Kami usahakan secepat mungkin
+              agar Anda bisa langsung menggunakan layanan.</p>
           </div>
         </div>
-        
+
         <div class="faq-item">
           <button class="faq-question">
             <span>Apakah bisa upgrade paket?</span>
             <span class="icon">+</span>
           </button>
           <div class="faq-answer">
-            <p>Ya, Anda bisa upgrade paket kapan saja. Cukup hubungi support kami dan kami akan membantu proses upgrade dengan perhitungan harga yang adil.</p>
+            <p>Ya, Anda bisa upgrade paket kapan saja. Cukup hubungi support kami dan kami akan membantu proses upgrade
+              dengan perhitungan harga yang adil.</p>
           </div>
         </div>
-        
+
         <div class="faq-item">
           <button class="faq-question">
             <span>Ada garansi uang kembali?</span>
             <span class="icon">+</span>
           </button>
           <div class="faq-answer">
-            <p>Ya, kami memberikan garansi uang kembali 3 hari jika Anda tidak puas dengan layanan kami. Syarat dan ketentuan berlaku.</p>
+            <p>Ya, kami memberikan garansi uang kembali 3 hari jika Anda tidak puas dengan layanan kami. Syarat dan
+              ketentuan berlaku.</p>
           </div>
         </div>
       </div>
@@ -341,9 +377,10 @@
             <span>🚀</span>
             <span class="text-gradient">NiniPanel</span>
           </div>
-          <p>Platform VPS hosting terjangkau dengan performa tinggi. Cocok untuk developer, entrepreneur, dan siapa saja yang butuh server reliabel.</p>
+          <p>Platform VPS hosting terjangkau dengan performa tinggi. Cocok untuk developer, entrepreneur, dan siapa saja
+            yang butuh server reliabel.</p>
         </div>
-        
+
         <div class="footer-links">
           <h4>Layanan</h4>
           <ul>
@@ -352,7 +389,7 @@
             <li><a href="#">Web Hosting</a></li>
           </ul>
         </div>
-        
+
         <div class="footer-links">
           <h4>Support</h4>
           <ul>
@@ -361,7 +398,7 @@
             <li><a href="#">Status Server</a></li>
           </ul>
         </div>
-        
+
         <div class="footer-links">
           <h4>Legal</h4>
           <ul>
@@ -371,7 +408,7 @@
           </ul>
         </div>
       </div>
-      
+
       <div class="footer-bottom">
         <p>&copy; 2024 NiniPanel. All rights reserved.</p>
         <div class="social-links">
@@ -397,25 +434,25 @@
     // Pricing toggle
     const pricingButtons = document.querySelectorAll('.pricing-toggle button');
     const priceElements = document.querySelectorAll('.pricing-card .price');
-    
+
     const periodLabels = {
       daily: '/hari',
       weekly: '/minggu',
       monthly: '/bulan'
     };
-    
+
     pricingButtons.forEach(btn => {
       btn.addEventListener('click', () => {
         pricingButtons.forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
-        
+
         const period = btn.dataset.period;
-        
+
         priceElements.forEach(el => {
           const price = parseInt(el.dataset[period]);
           el.innerHTML = `Rp ${price.toLocaleString('id-ID')}<span>${periodLabels[period]}</span>`;
         });
-        
+
         // Update order links
         document.querySelectorAll('.pricing-card a').forEach(link => {
           const url = new URL(link.href, window.location.origin);
@@ -430,10 +467,10 @@
       button.addEventListener('click', () => {
         const item = button.parentElement;
         const wasActive = item.classList.contains('active');
-        
+
         // Close all
         document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('active'));
-        
+
         // Open clicked if wasn't active
         if (!wasActive) {
           item.classList.add('active');
@@ -444,10 +481,29 @@
     // Mobile menu
     const mobileMenuBtn = document.getElementById('mobileMenuBtn');
     const navbarMenu = document.querySelector('.navbar-menu');
-    
+
     mobileMenuBtn?.addEventListener('click', () => {
       navbarMenu.classList.toggle('mobile-open');
     });
+
+    // Check if user is logged in and update header
+    function updateHeader() {
+      const token = localStorage.getItem('ninipanel_token');
+      const userJson = localStorage.getItem('ninipanel_user');
+      const navActions = document.getElementById('navbarActions');
+
+      if (token && userJson) {
+        const user = JSON.parse(userJson);
+        const dashboardUrl = user.role === 'admin' ? 'admin/index.html' : 'client/dashboard.html';
+
+        navActions.innerHTML = `
+          <span style="color: var(--text-secondary); font-size: 0.875rem;">Halo, <strong>${user.name}</strong></span>
+          <a href="${dashboardUrl}" class="btn btn-primary btn-sm">Client Area</a>
+        `;
+      }
+    }
+    updateHeader();
   </script>
 </body>
+
 </html>

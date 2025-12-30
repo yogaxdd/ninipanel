@@ -35,7 +35,7 @@
             <div class="sidebar-section">
                 <ul class="sidebar-menu">
                     <li><a href="../index.html">🌐 View Site</a></li>
-                    <li><a href="#" onclick="Auth.logout()">🚪 Logout</a></li>
+                    <li><a href="#" onclick="API.logout()">🚪 Logout</a></li>
                 </ul>
             </div>
         </aside>
@@ -110,12 +110,12 @@
         </div>
     </div>
 
+    <script src="../js/api.js"></script>
     <script src="../js/storage.js"></script>
-    <script src="../js/auth.js"></script>
     <script>
         // Check admin
-        if (!Auth.requireAdmin()) {
-            // Redirect handled by requireAdmin
+        if (!API.isLoggedIn() || !API.isAdmin()) {
+            window.location.href = '../auth/login.html';
         }
 
         let currentFilter = 'all';
