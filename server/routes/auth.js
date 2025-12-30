@@ -151,4 +151,23 @@ router.put('/password', authenticate, async (req, res) => {
     }
 });
 
+// Get all users (admin only)
+router.get('/users', authenticate, (req, res) => {
+    if (req.user.role !== 'admin') {
+        return res.status(403).json({ success: false, message: 'Admin access required' });
+    }
+
+    const allUsers = users.getAll().map(u => ({
+        id: u.id,
+        name: u.name,
+        email: u.email,
+        phone: u.phone,
+        role: u.role,
+        createdAt: u.createdAt
+    }));
+
+    res.json({ success: true, users: allUsers });
+});
+
 module.exports = router;
+

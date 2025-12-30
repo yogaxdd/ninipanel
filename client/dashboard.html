@@ -102,7 +102,6 @@
     </div>
 
     <script src="../js/api.js"></script>
-    <script src="../js/storage.js"></script>
     <script>
         // Check login
         if (!API.isLoggedIn()) {
@@ -112,22 +111,27 @@
         const user = API.getUser();
         document.getElementById('userName').textContent = user?.name || 'User';
 
-        // Load data
-        function loadDashboard() {
-            const servers = Storage.getServersByUser(user.id);
-            const orders = Storage.getOrdersByUser(user.id);
-            const tickets = Storage.getTicketsByUser(user.id);
+        // Load data from API
+        async function loadDashboard() {
+            try {
+                const [serversRes, ordersRes] = await Promise.all([
+                    API.getServers(),
+                    API.getOrders()
+                ]);
 
-            // Stats
-            document.getElementById('totalServers').textContent = servers.length;
-            document.getElementById('activeServers').textContent = servers.filter(s => s.status === 'online').length;
-            document.getElementById('pendingOrders').textContent = orders.filter(o => o.status === 'pending' || o.status === 'pending_verification').length;
-            document.getElementById('openTickets').textContent = tickets.filter(t => t.status === 'open').length;
+                const servers = serversRes.servers || [];
+                const orders = ordersRes.orders || [];
 
-            // Servers list
-            const serversList = document.getElementById('serversList');
-            if (servers.length > 0) {
-                serversList.innerHTML = servers.map(server => `
+                // Stats
+                document.getElementById('totalServers').textContent = servers.length;
+                document.getElementById('activeServers').textContent = servers.filter(s => s.status === 'online').length;
+                document.getElementById('pendingOrders').textContent = orders.filter(o => o.status === 'pending' || o.status === 'pending_verification').length;
+                document.getElementById('openTickets').textContent = 0;
+
+                // Servers list
+                const serversList = document.getElementById('serversList');
+                if (servers.length > 0) {
+                    serversList.innerHTML = servers.map(server => `
           <div class="d-flex justify-between align-center" style="padding: var(--spacing-md); background: var(--glass-bg); border-radius: var(--radius-md); margin-bottom: var(--spacing-sm);">
             <div class="d-flex align-center gap-1">
               <div class="vps-status ${server.status}">
@@ -144,31 +148,39 @@
             </div>
           </div>
         `).join('');
-            }
+                } else {
+                    serversList.innerHTML = `
+          <div style="text-align: center; padding: var(--spacing-2xl); color: var(--text-secondary);">
+            <div style="font-size: 3rem; margin-bottom: var(--spacing-md);">🖥️</div>
+            <div>Anda belum memiliki server aktif.</div>
+            <a href="../order.html" class="btn btn-primary" style="margin-top: var(--spacing-lg);">Order VPS Sekarang</a>
+          </div>
+        `;
+                }
 
-            // Activity
-            const activityList = document.getElementById('activityList');
-            const activities = [
-                ...orders.map(o => ({ type: 'order', date: o.createdAt, data: o })),
-                ...servers.map(s => ({ type: 'server', date: s.createdAt, data: s }))
-            ].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 5);
+                // Activity
+                const activityList = document.getElementById('activityList');
+                const activities = [
+                    ...orders.map(o => ({ type: 'order', date: o.createdAt, data: o })),
+                    ...servers.map(s => ({ type: 'server', date: s.createdAt, data: s }))
+                ].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 5);
 
-            if (activities.length > 0) {
-                activityList.innerHTML = activities.map(act => {
-                    const date = new Date(act.date).toLocaleDateString('id-ID', {
-                        day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
-                    });
+                if (activities.length > 0) {
+                    activityList.innerHTML = activities.map(act => {
+                        const date = new Date(act.date).toLocaleDateString('id-ID', {
+                            day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+                        });
 
-                    if (act.type === 'order') {
-                        const statusBadge = {
-                            pending: '<span class="badge badge-warning">Pending</span>',
-                            pending_verification: '<span class="badge badge-warning">Verifikasi</span>',
-                            paid: '<span class="badge badge-success">Dibayar</span>',
-                            active: '<span class="badge badge-success">Aktif</span>',
-                            expired: '<span class="badge badge-danger">Expired</span>'
-                        };
+                        if (act.type === 'order') {
+                            const statusBadge = {
+                                pending: '<span class="badge badge-warning">Pending</span>',
+                                pending_verification: '<span class="badge badge-warning">Verifikasi</span>',
+                                paid: '<span class="badge badge-success">Dibayar</span>',
+                                active: '<span class="badge badge-success">Aktif</span>',
+                                expired: '<span class="badge badge-danger">Expired</span>'
+                            };
 
-                        return `
+                            return `
               <div class="d-flex justify-between align-center" style="padding: var(--spacing-sm) 0; border-bottom: 1px solid var(--border-color);">
                 <div>
                   <span style="font-weight: 500;">Order ${act.data.planName}</span>
@@ -177,8 +189,8 @@
                 <div style="font-size: 0.75rem; color: var(--text-muted);">${date}</div>
               </div>
             `;
-                    } else {
-                        return `
+                        } else {
+                            return `
               <div class="d-flex justify-between align-center" style="padding: var(--spacing-sm) 0; border-bottom: 1px solid var(--border-color);">
                 <div>
                   <span style="font-weight: 500;">Server ${act.data.name || 'VPS'} dibuat</span>
@@ -186,8 +198,11 @@
                 <div style="font-size: 0.75rem; color: var(--text-muted);">${date}</div>
               </div>
             `;
-                    }
-                }).join('');
+                        }
+                    }).join('');
+                }
+            } catch (err) {
+                console.error('Dashboard error:', err);
             }
         }
 

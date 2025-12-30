@@ -107,31 +107,44 @@
     </div>
 
     <script src="../js/api.js"></script>
-    <script src="../js/storage.js"></script>
     <script>
         // Check admin
         if (!API.isLoggedIn() || !API.isAdmin()) {
             window.location.href = '../auth/login.html';
         }
 
-        // Load dashboard
-        function loadDashboard() {
-            const stats = Storage.getStats();
-            const orders = Storage.getOrders();
-            const tickets = Storage.getTickets();
+        // Load dashboard from API
+        async function loadDashboard() {
+            try {
+                // Fetch data from API
+                const [ordersRes, serversRes, usersRes, ticketsRes] = await Promise.all([
+                    API.getOrders(),
+                    API.getServers(),
+                    API.request('GET', '/auth/users'),
+                    API.request('GET', '/tickets').catch(() => ({ tickets: [] }))
+                ]);
 
-            // Stats
-            document.getElementById('totalUsers').textContent = stats.totalUsers;
-            document.getElementById('activeServers').textContent = stats.activeServers;
-            document.getElementById('pendingOrders').textContent = stats.pendingOrders;
-            document.getElementById('totalRevenue').textContent = `Rp ${stats.totalRevenue.toLocaleString('id-ID')}`;
+                const orders = ordersRes.orders || [];
+                const servers = serversRes.servers || [];
+                const users = usersRes.users || [];
+                const tickets = ticketsRes.tickets || [];
 
-            // Pending orders
-            const pendingOrders = orders.filter(o => o.status === 'pending_verification');
-            const pendingList = document.getElementById('pendingOrdersList');
+                // Calculate stats
+                const pendingCount = orders.filter(o => o.status === 'pending_verification').length;
+                const totalRevenue = orders.filter(o => o.status === 'active').reduce((sum, o) => sum + o.amount, 0);
 
-            if (pendingOrders.length > 0) {
-                pendingList.innerHTML = pendingOrders.slice(0, 5).map(order => `
+                // Update stats
+                document.getElementById('totalUsers').textContent = users.length;
+                document.getElementById('activeServers').textContent = servers.filter(s => s.status === 'online').length;
+                document.getElementById('pendingOrders').textContent = pendingCount;
+                document.getElementById('totalRevenue').textContent = `Rp ${totalRevenue.toLocaleString('id-ID')}`;
+
+                // Pending orders
+                const pendingOrders = orders.filter(o => o.status === 'pending_verification');
+                const pendingList = document.getElementById('pendingOrdersList');
+
+                if (pendingOrders.length > 0) {
+                    pendingList.innerHTML = pendingOrders.slice(0, 5).map(order => `
           <div class="d-flex justify-between align-center" style="padding: var(--spacing-sm) 0; border-bottom: 1px solid var(--border-color);">
             <div>
               <div style="font-weight: 500;">${order.customerName}</div>
@@ -140,19 +153,24 @@
             <a href="orders.html?verify=${order.id}" class="btn btn-success btn-sm">Verify</a>
           </div>
         `).join('');
-            }
+                } else {
+                    pendingList.innerHTML = '<div style="text-align: center; padding: var(--spacing-xl); color: var(--text-secondary);">Tidak ada order pending.</div>';
+                }
 
-            // Recent tickets
-            const openTickets = tickets.filter(t => t.status === 'open');
-            const ticketsList = document.getElementById('recentTicketsList');
+                // Recent tickets
+                const openTickets = tickets.filter(t => t.status === 'open');
+                const ticketsList = document.getElementById('recentTicketsList');
 
-            if (openTickets.length > 0) {
-                ticketsList.innerHTML = openTickets.slice(0, 5).map(ticket => `
+                if (openTickets.length > 0) {
+                    ticketsList.innerHTML = openTickets.slice(0, 5).map(ticket => `
           <div style="padding: var(--spacing-sm) 0; border-bottom: 1px solid var(--border-color);">
             <div style="font-weight: 500;">${ticket.subject}</div>
             <div style="font-size: 0.75rem; color: var(--text-secondary);">${new Date(ticket.createdAt).toLocaleDateString('id-ID')}</div>
           </div>
         `).join('');
+                }
+            } catch (err) {
+                console.error('Dashboard error:', err);
             }
         }
 
