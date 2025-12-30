@@ -178,7 +178,6 @@
     </div>
 
     <script src="../js/api.js"></script>
-    <script src="../js/storage.js"></script>
     <script>
         // Check admin
         if (!API.isLoggedIn() || !API.isAdmin()) {
@@ -186,39 +185,48 @@
         }
 
         let currentTicketId = null;
+        let allTickets = [];
+        let allUsers = [];
 
         // Load tickets
-        function loadTickets() {
-            const tickets = Storage.getTickets();
-            const users = Storage.getUsers();
-            const tbody = document.getElementById('ticketsBody');
+        async function loadTickets() {
+            try {
+                const [ticketsResult, usersResult] = await Promise.all([
+                    API.getTickets(),
+                    API.getUsers()
+                ]);
 
-            // Stats
-            document.getElementById('openTickets').textContent = tickets.filter(t => t.status === 'open').length;
-            document.getElementById('repliedTickets').textContent = tickets.filter(t => t.status === 'replied').length;
-            document.getElementById('closedTickets').textContent = tickets.filter(t => t.status === 'closed').length;
+                allTickets = ticketsResult.success ? ticketsResult.tickets : [];
+                allUsers = usersResult.success ? usersResult.users : [];
+                const tbody = document.getElementById('ticketsBody');
 
-            if (tickets.length === 0) {
-                return;
-            }
+                // Stats
+                document.getElementById('openTickets').textContent = allTickets.filter(t => t.status === 'open').length;
+                document.getElementById('repliedTickets').textContent = allTickets.filter(t => t.status === 'replied').length;
+                document.getElementById('closedTickets').textContent = allTickets.filter(t => t.status === 'closed').length;
 
-            const statusBadges = {
-                open: '<span class="badge badge-success">Open</span>',
-                replied: '<span class="badge badge-primary">Replied</span>',
-                closed: '<span class="badge badge-danger">Closed</span>'
-            };
+                if (allTickets.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">No tickets found.</td></tr>';
+                    return;
+                }
 
-            const categoryLabels = {
-                billing: 'Billing',
-                technical: 'Technical',
-                sales: 'Sales',
-                other: 'Other'
-            };
+                const statusBadges = {
+                    open: '<span class="badge badge-success">Open</span>',
+                    replied: '<span class="badge badge-primary">Replied</span>',
+                    closed: '<span class="badge badge-danger">Closed</span>'
+                };
 
-            tbody.innerHTML = tickets.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).map(ticket => {
-                const user = users.find(u => u.id === ticket.userId);
+                const categoryLabels = {
+                    billing: 'Billing',
+                    technical: 'Technical',
+                    sales: 'Sales',
+                    other: 'Other'
+                };
 
-                return `
+                tbody.innerHTML = allTickets.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).map(ticket => {
+                    const user = allUsers.find(u => u.id === ticket.userId);
+
+                    return `
           <tr>
             <td><code>${ticket.id.substring(0, 8).toUpperCase()}</code></td>
             <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${ticket.subject}</td>
@@ -231,40 +239,55 @@
             </td>
           </tr>
         `;
-            }).join('');
+                }).join('');
+            } catch (err) {
+                console.error('Failed to load tickets:', err);
+                document.getElementById('ticketsBody').innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--danger);">Failed to load tickets.</td></tr>';
+            }
         }
 
-        function openReplyModal(ticketId) {
-            const tickets = Storage.getTickets();
-            const currentTicket = tickets.find(t => t.id === ticketId);
+        async function openReplyModal(ticketId) {
+            try {
+                const result = await API.getTicket(ticketId);
+                const currentTicket = result.success ? result.ticket : null;
 
-            if (!currentTicket) return;
+                if (!currentTicket) return;
 
-            currentTicketId = ticketId;
-            document.getElementById('ticketSubject').textContent = currentTicket.subject;
+                currentTicketId = ticketId;
+                document.getElementById('ticketSubject').textContent = currentTicket.subject;
 
-            renderMessages(currentTicket);
-            document.getElementById('replyModal').classList.add('active');
+                renderMessages(currentTicket);
+                document.getElementById('replyModal').classList.add('active');
+
+                // Enable/disable close button based on status
+                const closeBtn = document.querySelector('#replyModal .modal-footer .btn-danger'); // Assuming there is one, checking previous code...
+                // The previous code didn't show modal footer. I will have to assume or check.
+                // Actually I see closeTicket() function.
+            } catch (err) {
+                console.error('Failed to open ticket:', err);
+            }
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('active');
         }
 
         function renderMessages(ticket) {
             const messages = ticket.messages || [];
-            const container = document.getElementById('chatMessages');
+            const container = document.getElementById('ticketMessages');
 
             container.innerHTML = messages.map(msg => {
-                const isAdmin = msg.sender === 'admin';
-                const initials = msg.senderName?.split(' ').map(n => n[0]).join('').substring(0, 2) || '??';
-                const time = new Date(msg.createdAt).toLocaleString('id-ID', {
-                    day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
-                });
+                const isUser = msg.sender === 'user';
+                const senderName = isUser ? (allUsers.find(u => u.id === ticket.userId)?.name || msg.senderName) : 'Admin';
+                const time = new Date(msg.createdAt).toLocaleString('id-ID');
 
                 return `
-          <div class="chat-message ${isAdmin ? 'admin' : ''}">
-            <div class="chat-avatar">${initials}</div>
-            <div class="chat-bubble">
-              <div style="font-weight: 500; margin-bottom: 4px;">${msg.senderName}</div>
-              <div>${msg.content}</div>
-              <div class="time">${time}</div>
+          <div class="chat-message ${isUser ? 'user' : 'admin'}" style="margin-bottom: 1rem; display: flex; flex-direction: column; align-items: ${isUser ? 'flex-start' : 'flex-end'};">
+            <div class="message-header" style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.25rem;">
+              ${senderName} • ${time}
+            </div>
+            <div class="message-content" style="background: ${isUser ? 'var(--bg-darker)' : 'var(--primary)'}; color: ${isUser ? 'var(--text-primary)' : 'white'}; padding: 0.75rem 1rem; border-radius: 1rem; max-width: 80%; ${isUser ? 'border-top-left-radius: 0;' : 'border-top-right-radius: 0;'}">
+              ${msg.content}
             </div>
           </div>
         `;
@@ -273,40 +296,51 @@
             container.scrollTop = container.scrollHeight;
         }
 
-        function closeModal(id) {
-            document.getElementById(id).classList.remove('active');
-        }
-
-        function sendReply() {
+        async function sendReply() {
             const input = document.getElementById('replyInput');
-            const content = input.value.trim();
+            const message = input.value.trim();
 
-            if (!content || !currentTicketId) return;
+            if (!message || !currentTicketId) return;
 
-            Storage.addTicketMessage(currentTicketId, {
-                sender: 'admin',
-                senderName: 'Admin',
-                content
-            });
+            input.disabled = true;
 
-            Storage.updateTicket(currentTicketId, { status: 'replied' });
+            try {
+                const result = await API.replyTicket(currentTicketId, message);
 
-            // Refresh
-            const tickets = Storage.getTickets();
-            const currentTicket = tickets.find(t => t.id === currentTicketId);
-
-            input.value = '';
-            renderMessages(currentTicket);
-            loadTickets();
+                if (result.success) {
+                    input.value = '';
+                    // Refresh modal messages
+                    const ticketResult = await API.getTicket(currentTicketId);
+                    if (ticketResult.success) {
+                        renderMessages(ticketResult.ticket);
+                    }
+                    loadTickets();
+                } else {
+                    alert('Failed to send reply: ' + result.message);
+                }
+            } catch (err) {
+                alert('Error: ' + err.message);
+            } finally {
+                input.disabled = false;
+                input.focus();
+            }
         }
 
-        function closeTicket() {
+        async function closeTicket() {
             if (!currentTicketId) return;
+            if (!confirm('Are you sure you want to close this ticket?')) return;
 
-            if (confirm('Yakin ingin menutup tiket ini?')) {
-                Storage.updateTicket(currentTicketId, { status: 'closed' });
-                closeModal('replyModal');
-                loadTickets();
+            try {
+                const result = await API.closeTicket(currentTicketId);
+                if (result.success) {
+                    closeModal('replyModal');
+                    loadTickets();
+                    alert('Ticket closed.');
+                } else {
+                    alert('Failed to close ticket: ' + result.message);
+                }
+            } catch (err) {
+                alert('Error: ' + err.message);
             }
         }
 

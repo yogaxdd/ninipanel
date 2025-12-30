@@ -184,59 +184,41 @@
         let selectedServer = null;
         let currentPath = '/root';
 
-        // Mock file system
-        const fileSystem = {
-            '/root': [
-                { name: '..', type: 'folder', size: '-', modified: '-', permissions: 'drwxr-xr-x' },
-                { name: 'public_html', type: 'folder', size: '-', modified: 'Dec 29 12:00', permissions: 'drwxr-xr-x' },
-                { name: 'logs', type: 'folder', size: '-', modified: 'Dec 29 10:00', permissions: 'drwxr-xr-x' },
-                { name: '.bashrc', type: 'file', size: '3.7 KB', modified: 'Dec 29 11:00', permissions: '-rw-r--r--' },
-                { name: '.profile', type: 'file', size: '807 B', modified: 'Dec 29 11:00', permissions: '-rw-r--r--' },
-                { name: 'config.json', type: 'file', size: '1.2 KB', modified: 'Dec 29 14:30', permissions: '-rw-r--r--' }
-            ],
-            '/root/public_html': [
-                { name: '..', type: 'folder', size: '-', modified: '-', permissions: 'drwxr-xr-x' },
-                { name: 'index.html', type: 'file', size: '2.4 KB', modified: 'Dec 29 15:00', permissions: '-rw-r--r--' },
-                { name: 'style.css', type: 'file', size: '5.1 KB', modified: 'Dec 29 15:00', permissions: '-rw-r--r--' },
-                { name: 'script.js', type: 'file', size: '3.8 KB', modified: 'Dec 29 14:45', permissions: '-rw-r--r--' },
-                { name: 'images', type: 'folder', size: '-', modified: 'Dec 29 12:00', permissions: 'drwxr-xr-x' }
-            ],
-            '/root/logs': [
-                { name: '..', type: 'folder', size: '-', modified: '-', permissions: 'drwxr-xr-x' },
-                { name: 'access.log', type: 'file', size: '15.2 KB', modified: 'Dec 29 16:00', permissions: '-rw-r--r--' },
-                { name: 'error.log', type: 'file', size: '2.1 KB', modified: 'Dec 29 15:30', permissions: '-rw-r--r--' }
-            ]
-        };
+        // Load servers from API
+        async function loadServers() {
+            try {
+                const result = await API.getServers();
+                const servers = result.success ? result.servers : [];
+                const selector = document.getElementById('serverSelector');
 
-        // Load servers
-        function loadServers() {
-            const servers = Storage.getServersByUser(user.id);
-            const selector = document.getElementById('serverSelector');
+                if (servers.length === 0) return;
 
-            if (servers.length === 0) return;
-
-            selector.innerHTML = '<div style="color: var(--text-secondary);">Pilih server:</div>' +
-                servers.map(server => `
+                selector.innerHTML = '<div style="color: var(--text-secondary);">Pilih server:</div>' +
+                    servers.map(server => `
           <div class="server-tab" data-server="${server.id}" style="padding: var(--spacing-sm) var(--spacing-lg); background: var(--glass-bg); border: 1px solid var(--border-color); border-radius: var(--radius-md); cursor: pointer; display: flex; align-items: center; gap: var(--spacing-sm);">
             <span class="vps-status ${server.status}"><span class="dot"></span></span>
             <span>${server.name || 'VPS-' + server.id.substring(0, 6).toUpperCase()}</span>
           </div>
         `).join('');
 
-            selector.querySelectorAll('.server-tab').forEach(tab => {
-                tab.addEventListener('click', () => {
-                    selector.querySelectorAll('.server-tab').forEach(t => t.style.borderColor = 'var(--border-color)');
-                    tab.style.borderColor = 'var(--primary)';
-                    selectedServer = servers.find(s => s.id === tab.dataset.server);
-                    loadFileManager();
+                selector.querySelectorAll('.server-tab').forEach(tab => {
+                    tab.addEventListener('click', () => {
+                        selector.querySelectorAll('.server-tab').forEach(t => t.style.borderColor = 'var(--border-color)');
+                        tab.style.borderColor = 'var(--primary)';
+                        selectedServer = servers.find(s => s.id === tab.dataset.server);
+                        loadFileManager();
+                    });
                 });
-            });
 
-            // Auto-select first
-            if (servers[0]) {
-                selectedServer = servers[0];
-                selector.querySelector('.server-tab').style.borderColor = 'var(--primary)';
-                loadFileManager();
+                // Auto-select first
+                if (servers[0]) {
+                    selectedServer = servers[0];
+                    selector.querySelector('.server-tab').style.borderColor = 'var(--primary)';
+                    loadFileManager();
+                }
+            } catch (err) {
+                console.error('Failed to load servers:', err);
+                alert('Gagal memuat server.');
             }
         }
 
@@ -258,13 +240,63 @@
         function renderFileManager() {
             const files = fileSystem[currentPath] || [];
 
-            document.getElementById('fileManagerContainer').innerHTML = `
+            async function loadFileManager() {
+                if (!selectedServer || selectedServer.status !== 'online') {
+                    document.getElementById('fileManagerContainer').innerHTML = `
+          <div class="card" style="text-align: center; padding: var(--spacing-3xl);">
+            <div style="font-size: 4rem; margin-bottom: var(--spacing-lg);">⚠️</div>
+            <h3 style="margin-bottom: var(--spacing-sm);">Server Offline</h3>
+            <p style="color: var(--text-secondary);">Server harus online untuk mengakses file manager.</p>
+          </div>
+        `;
+                    return;
+                }
+
+                document.getElementById('fileManagerContainer').innerHTML = '<div style="text-align:center; padding: 2rem;">Loading files...</div>';
+
+                try {
+                    const result = await API.listFiles(selectedServer.id, currentPath);
+
+                    let files = [];
+                    if (result.success && result.files) {
+                        files = result.files;
+                    } else if (result.files) {
+                        files = result.files; // Fallback structure
+                    } else {
+                        files = [];
+                    }
+
+                    // Sorting: Folders first, then files
+                    files.sort((a, b) => {
+                        if (a.type === 'directory' && b.type !== 'directory') return -1;
+                        if (a.type !== 'directory' && b.type === 'directory') return 1;
+                        return a.name.localeCompare(b.name);
+                    });
+
+                    // Parent directory
+                    if (currentPath !== '/root' && currentPath !== '/') {
+                        files.unshift({ name: '..', type: 'directory', size: '-', modified: '-', permissions: '' });
+                    }
+
+                    renderFileManager(files);
+                } catch (err) {
+                    console.error('File manager error:', err);
+                    document.getElementById('fileManagerContainer').innerHTML = `
+                <div style="text-align:center; padding: 2rem; color: var(--danger);">
+                    Gagal memuat file: ${err.message}
+                    <br><br>
+                    <button class="btn btn-secondary" onclick="loadFileManager()">Try Again</button>
+                </div>`;
+                }
+            }
+
+            function renderFileManager(files) {
+                document.getElementById('fileManagerContainer').innerHTML = `
         <div class="file-browser">
           <div class="folder-tree">
             <h4 style="margin-bottom: var(--spacing-md); padding: 0 var(--spacing-md);">Folders</h4>
             <div class="folder-item ${currentPath === '/root' ? 'active' : ''}" onclick="navigateTo('/root')">📁 /root</div>
-            <div class="folder-item nested ${currentPath === '/root/public_html' ? 'active' : ''}" onclick="navigateTo('/root/public_html')">📁 public_html</div>
-            <div class="folder-item nested ${currentPath === '/root/logs' ? 'active' : ''}" onclick="navigateTo('/root/logs')">📁 logs</div>
+             <!-- Dynamic folders could go here -->
           </div>
           
           <div class="file-list">
@@ -288,55 +320,56 @@
               </div>
               
               ${files.map(file => `
-                <div class="file-row" ${file.type === 'folder' && file.name !== '..' ? `onclick="navigateTo('${currentPath}/${file.name}')"` : ''} ${file.name === '..' ? `onclick="navigateUp()"` : ''} style="${file.type === 'folder' ? 'cursor: pointer;' : ''}">
+                <div class="file-row" ${file.type === 'directory' && file.name !== '..' ? `onclick="navigateTo('${currentPath === '/' ? '' : currentPath}/${file.name}')"` : ''} ${file.name === '..' ? `onclick="navigateUp()"` : ''} style="${file.type === 'directory' ? 'cursor: pointer;' : ''}">
                   <div class="file-name">
-                    <span class="icon">${file.type === 'folder' ? '📁' : getFileIcon(file.name)}</span>
+                    <span class="icon">${file.type === 'directory' ? '📁' : getFileIcon(file.name)}</span>
                     <span>${file.name}</span>
                   </div>
-                  <div class="file-size">${file.size}</div>
-                  <div class="file-modified">${file.modified}</div>
-                  <div class="file-permissions" style="font-family: var(--font-mono); font-size: 0.75rem;">${file.permissions}</div>
+                  <div class="file-size">${file.size || '-'}</div>
+                  <div class="file-modified">${file.modified || '-'}</div>
+                  <div class="file-permissions" style="font-family: var(--font-mono); font-size: 0.75rem;">${file.permissions || '-'}</div>
                 </div>
               `).join('')}
             </div>
           </div>
         </div>
       `;
-        }
+            }
 
-        function getFileIcon(filename) {
-            const ext = filename.split('.').pop().toLowerCase();
-            const icons = {
-                'html': '🌐',
-                'css': '🎨',
-                'js': '📜',
-                'json': '📋',
-                'log': '📄',
-                'txt': '📄',
-                'md': '📝',
-                'png': '🖼️',
-                'jpg': '🖼️',
-                'gif': '🖼️'
-            };
-            return icons[ext] || '📄';
-        }
-
-        function navigateTo(path) {
-            if (fileSystem[path]) {
+            function navigateTo(path) {
                 currentPath = path;
-                renderFileManager();
+                loadFileManager();
             }
-        }
 
-        function navigateUp() {
-            const parts = currentPath.split('/');
-            if (parts.length > 2) {
+            function navigateUp() {
+                const parts = currentPath.split('/');
                 parts.pop();
-                navigateTo(parts.join('/'));
+                currentPath = parts.join('/') || '/';
+                // Ensure we don't go above root (optional, depending on chroot)
+                if (!currentPath.startsWith('/root') && currentPath !== '/') {
+                    // For now let's assume /root is base
+                }
+                loadFileManager();
             }
-        }
 
-        loadServers();
+            function getFileIcon(filename) {
+                const ext = filename.split('.').pop().toLowerCase();
+                const icons = {
+                    'html': '🌐',
+                    'css': '🎨',
+                    'js': '📜',
+                    'json': '📋',
+                    'log': '📄',
+                    'txt': '📄',
+                    'md': '📝',
+                    'png': '🖼️',
+                    'jpg': '🖼️',
+                    'gif': '🖼️'
+                };
+                return icons[ext] || '📄';
+            }
+
+            loadServers();
     </script>
 </body>
 

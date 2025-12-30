@@ -110,7 +110,6 @@
     </div>
 
     <script src="../js/api.js"></script>
-    <script src="../js/storage.js"></script>
     <script>
         // Check login
         if (!API.isLoggedIn()) {
@@ -121,46 +120,58 @@
         let selectedServer = null;
         let commandHistory = [];
         let historyIndex = -1;
+        let allServers = []; // Store fetched servers
 
         // URL param
         const urlParams = new URLSearchParams(window.location.search);
         const serverIdParam = urlParams.get('server');
 
-        // Load servers
-        function loadServers() {
-            const servers = Storage.getServersByUser(user.id);
-            const selector = document.getElementById('serverSelector');
+        // Load servers from API
+        async function loadServers() {
+            try {
+                const result = await API.getServers();
+                if (!result.success) {
+                    throw new Error(result.message || 'Gagal memuat server');
+                }
 
-            if (servers.length === 0) {
-                return;
-            }
+                allServers = result.servers || [];
+                const selector = document.getElementById('serverSelector');
 
-            selector.innerHTML = '<div style="color: var(--text-secondary);">Pilih server:</div>' +
-                servers.map(server => `
-          <div class="server-tab ${serverIdParam === server.id ? 'active' : ''}" data-server="${server.id}">
+                if (allServers.length === 0) {
+                    return;
+                }
+
+                selector.innerHTML = '<div style="color: var(--text-secondary);">Pilih server:</div>' +
+                    allServers.map(server => `
+          <div class="server-tab ${serverIdParam === server.id ? 'active' : ''}" data-server="${server.id}" onclick="selectServer('${server.id}')">
             <span class="vps-status ${server.status}"><span class="dot"></span></span>
             <span>${server.name || 'VPS-' + server.id.substring(0, 6).toUpperCase()}</span>
           </div>
         `).join('');
 
-            // Add click handlers
-            selector.querySelectorAll('.server-tab').forEach(tab => {
-                tab.addEventListener('click', () => {
-                    selector.querySelectorAll('.server-tab').forEach(t => t.classList.remove('active'));
-                    tab.classList.add('active');
-                    const serverId = tab.dataset.server;
-                    selectedServer = servers.find(s => s.id === serverId);
-                    loadConsole();
-                });
-            });
-
-            // Auto-select first or from URL
-            const targetServer = serverIdParam ? servers.find(s => s.id === serverIdParam) : servers[0];
-            if (targetServer) {
-                selectedServer = targetServer;
-                selector.querySelector(`[data-server="${targetServer.id}"]`)?.classList.add('active');
-                loadConsole();
+                // Auto select first or param
+                if (serverIdParam) {
+                    selectServer(serverIdParam);
+                } else if (allServers.length > 0) {
+                    selectServer(allServers[0].id);
+                }
+            } catch (err) {
+                console.error('Failed to load servers:', err);
+                alert('Gagal memuat server: ' + err.message);
             }
+        }
+
+        function selectServer(serverId) {
+            const selector = document.getElementById('serverSelector');
+
+            // UI Update
+            selector.querySelectorAll('.server-tab').forEach(t => t.classList.remove('active'));
+            const tab = selector.querySelector(`[data-server="${serverId}"]`);
+            if (tab) tab.classList.add('active');
+
+            // Logic
+            selectedServer = allServers.find(s => s.id === serverId);
+            loadConsole();
         }
 
         function loadConsole() {
@@ -371,17 +382,37 @@ MiB Swap:      0.0 total,      0.0 free,      0.0 used.   ${Math.floor(selectedS
             return div.innerHTML;
         }
 
-        function startAndConnect() {
+        async function startAndConnect() {
             if (!selectedServer) return;
 
-            Storage.updateServer(selectedServer.id, { status: 'starting' });
-            loadServers();
+            // UI Update
+            const btn = document.querySelector('button[onclick="startAndConnect()"]');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = 'Starting...';
+            }
 
-            setTimeout(() => {
-                Storage.updateServer(selectedServer.id, { status: 'online' });
-                selectedServer.status = 'online';
-                loadConsole();
-            }, 2000);
+            try {
+                const result = await API.startServer(selectedServer.id);
+                if (result.success) {
+                    loadServers(); // Refresh status
+                    setTimeout(() => {
+                        loadConsole();
+                    }, 2000);
+                } else {
+                    alert('Gagal start server: ' + result.message);
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.innerHTML = '▶️ Start Server';
+                    }
+                }
+            } catch (err) {
+                alert('Error: ' + err.message);
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '▶️ Start Server';
+                }
+            }
         }
 
         loadServers();

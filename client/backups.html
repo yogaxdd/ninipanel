@@ -227,7 +227,6 @@
     </div>
 
     <script src="../js/api.js"></script>
-    <script src="../js/storage.js"></script>
     <script>
         // Check login
         if (!API.isLoggedIn()) {
@@ -239,162 +238,140 @@
         let backups = [];
 
         // Load servers
-        function loadServers() {
-            const servers = Storage.getServersByUser(user.id);
-            const selector = document.getElementById('serverSelector');
+        async function loadServers() {
+            try {
+                const result = await API.getServers();
+                const servers = result.success ? result.servers : [];
+                const selector = document.getElementById('serverSelector');
 
-            if (servers.length === 0) return;
+                if (servers.length === 0) return;
 
-            selector.innerHTML = '<div style="color: var(--text-secondary);">Pilih server:</div>' +
-                servers.map(server => `
+                selector.innerHTML = '<div style="color: var(--text-secondary);">Pilih server:</div>' +
+                    servers.map(server => `
                 <div class="server-tab" data-server="${server.id}">
                     <span class="vps-status ${server.status}"><span class="dot"></span></span>
                     <span>${server.name || 'VPS-' + server.id.substring(0, 6).toUpperCase()}</span>
                 </div>
             `).join('');
 
-            selector.querySelectorAll('.server-tab').forEach(tab => {
-                tab.addEventListener('click', () => {
-                    selector.querySelectorAll('.server-tab').forEach(t => t.classList.remove('active'));
-                    tab.classList.add('active');
-                    selectedServer = servers.find(s => s.id === tab.dataset.server);
-                    loadBackups();
+                selector.querySelectorAll('.server-tab').forEach(tab => {
+                    tab.addEventListener('click', () => {
+                        selector.querySelectorAll('.server-tab').forEach(t => t.classList.remove('active'));
+                        tab.classList.add('active');
+                        selectedServer = servers.find(s => s.id === tab.dataset.server);
+                        loadBackups();
+                    });
                 });
-            });
 
-            // Auto-select first
-            if (servers[0]) {
-                selectedServer = servers[0];
-                selector.querySelector('.server-tab').classList.add('active');
-                loadBackups();
+                // Auto-select first
+                if (servers[0]) {
+                    selectedServer = servers[0];
+                    selector.querySelector('.server-tab').classList.add('active');
+                    loadBackups();
+                }
+            } catch (err) {
+                console.error('Failed to load servers:', err);
             }
         }
 
         async function loadBackups() {
             if (!selectedServer) return;
 
-            // Try to load from API
-            try {
-                const token = localStorage.getItem('token');
-                const response = await fetch(`/api/backups/server/${selectedServer.id}`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                const data = await response.json();
-                if (data.success) {
-                    backups = data.backups || [];
-                }
-            } catch (err) {
-                console.log('Using local storage for backups');
-                backups = JSON.parse(localStorage.getItem(`backups_${selectedServer.id}`) || '[]');
-            }
+            document.getElementById('backupsContainer').innerHTML = '<div style="text-align:center; padding: 2rem;">Loading backups...</div>';
 
-            renderBackups();
+            try {
+                const result = await API.getBackups(selectedServer.id);
+                backups = result.success ? result.backups : [];
+                renderBackups();
+            } catch (err) {
+                console.error('Failed to load backups:', err);
+                document.getElementById('backupsContainer').innerHTML = `
+                 <div class="card" style="text-align: center; padding: var(--spacing-3xl);">
+                    <div style="font-size: 4rem; margin-bottom: var(--spacing-lg);">❌</div>
+                    <h3 style="margin-bottom: var(--spacing-sm);">Error Loading Backups</h3>
+                    <p style="color: var(--text-secondary);">${err.message}</p>
+                 </div>`;
+            }
         }
 
         function renderBackups() {
             const container = document.getElementById('backupsContainer');
 
             container.innerHTML = `
-                <div class="create-backup-section">
-                    <div style="font-size: 2.5rem; margin-bottom: var(--spacing-md);">💾</div>
-                    <h3 style="margin-bottom: var(--spacing-sm);">Create New Backup</h3>
-                    <p style="color: var(--text-secondary); margin-bottom: var(--spacing-lg);">
-                        Buat backup untuk menyimpan data server Anda. Backup akan menyimpan semua file di container.
-                    </p>
-                    <div style="display: flex; gap: var(--spacing-md); justify-content: center; flex-wrap: wrap;">
-                        <input type="text" id="backupName" placeholder="Nama backup (opsional)" 
-                            style="padding: var(--spacing-sm) var(--spacing-md); background: var(--bg-dark); border: 1px solid var(--border-color); border-radius: var(--radius-md); color: var(--text-primary); width: 250px;">
-                        <button class="btn btn-primary" onclick="createBackup()">
-                            ➕ Create Backup
-                        </button>
-                    </div>
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--spacing-lg);">
+                    <h3 class="section-title">Backups (${backups.length})</h3>
+                    <button class="btn btn-primary btn-sm" onclick="createBackup()">➕ Create Backup</button>
                 </div>
 
-                <div class="card">
-                    <h3 style="margin-bottom: var(--spacing-lg);">📦 Backup List</h3>
-                    
-                    ${backups.length === 0 ? `
-                        <div class="empty-state">
-                            <div style="font-size: 3rem; margin-bottom: var(--spacing-md);">📭</div>
-                            <h4 style="color: var(--text-secondary);">Belum ada backup</h4>
-                            <p style="color: var(--text-muted); font-size: 0.875rem;">
-                                Buat backup pertama Anda untuk melindungi data server.
-                            </p>
-                        </div>
-                    ` : backups.map(backup => `
-                        <div class="backup-card">
-                            <div class="backup-info">
-                                <h4>💾 ${escapeHtml(backup.name)}</h4>
-                                <p>ID: ${backup.id.substring(0, 8)}...</p>
-                            </div>
-                            <div class="backup-size">${formatSize(backup.size)}</div>
-                            <div class="backup-date">${formatDate(backup.createdAt)}</div>
-                            <span class="backup-status ${backup.status}">${backup.status}</span>
-                            <div class="backup-actions">
-                                <button class="btn-download" onclick="downloadBackup('${backup.id}')" ${backup.status !== 'completed' ? 'disabled' : ''}>
-                                    ⬇️ Download
-                                </button>
-                                <button class="btn-restore" onclick="restoreBackup('${backup.id}')" ${backup.status !== 'completed' ? 'disabled' : ''}>
-                                    🔄 Restore
-                                </button>
-                                <button class="btn-delete" onclick="deleteBackup('${backup.id}')">
-                                    🗑️
-                                </button>
-                            </div>
-                        </div>
-                    `).join('')}
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Size</th>
+                                <th>Created At</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${backups.length > 0 ? backups.map(backup => `
+                                <tr>
+                                    <td>
+                                        <div style="font-weight: 500;">${escapeHtml(backup.name)}</div>
+                                        <div style="font-size: 0.75rem; color: var(--text-muted); font-family: var(--font-mono);">${backup.id.substring(0, 8)}</div>
+                                    </td>
+                                    <td>${formatSize(backup.size)}</td>
+                                    <td>${formatDate(backup.createdAt)}</td>
+                                    <td>
+                                        <span class="badge badge-${backup.status === 'completed' ? 'success' : (backup.status === 'failed' ? 'danger' : 'warning')}">
+                                            ${backup.status}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div style="display: flex; gap: 0.5rem;">
+                                            ${backup.status === 'completed' ? `
+                                            <button class="btn btn-secondary btn-sm" onclick="restoreBackup('${backup.id}')" title="Restore">↺</button>
+                                            <button class="btn btn-secondary btn-sm" onclick="window.location.href='/api/backups/${backup.id}/download?token=${API.token}'" title="Download">⬇️</button>
+                                            ` : ''}
+                                            <button class="btn btn-secondary btn-sm" style="color: var(--danger); border-color: var(--danger);" onclick="deleteBackup('${backup.id}')" title="Delete">🗑️</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            `).join('') : '<tr><td colspan="5" style="text-align: center; color: var(--text-secondary);">No backups found.</td></tr>'}
+                        </tbody>
+                    </table>
                 </div>
-            `;
+                
+                <div style="margin-top: var(--spacing-md); font-size: 0.875rem; color: var(--text-secondary);">
+                    ℹ️ Backups consume your disk space quota. Delete old backups to free up space.
+                </div>
+            </div>
+        `;
         }
+
+        // Helper to get token for download link above if needed, but API.token is not exposed directly.
+        // API.token is internal to API class usually, but I exported it?
+        // Let's check api.js. It has `get token()`.
+        // Wait, `API` is an instance of `APIClient`.
+        // I need to check if `token` getter exists. `js/api.js`: `get token() { return localStorage.getItem('ninipanel_token'); }`
+        // So `API.token` works.
 
         async function createBackup() {
-            if (!selectedServer) return;
-
-            const name = document.getElementById('backupName').value || `Backup ${new Date().toLocaleDateString('id-ID')}`;
+            const name = prompt('Enter backup name (optional):');
+            if (name === null) return; // Cancelled
 
             try {
-                const token = localStorage.getItem('token');
-                const response = await fetch(`/api/backups/server/${selectedServer.id}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({ name })
-                });
-
-                const data = await response.json();
-                if (data.success) {
-                    alert('✅ Backup created successfully!');
+                const result = await API.createBackup(selectedServer.id, name);
+                if (result.success) {
+                    alert('Backup creation started!');
                     loadBackups();
                 } else {
-                    alert('❌ Error: ' + data.message);
+                    alert('Failed to create backup: ' + result.message);
                 }
             } catch (err) {
-                // Simulation mode
-                const newBackup = {
-                    id: 'backup-' + Date.now(),
-                    serverId: selectedServer.id,
-                    name: name,
-                    size: Math.floor(Math.random() * 50 + 10) * 1024 * 1024,
-                    status: 'completed',
-                    createdAt: new Date().toISOString()
-                };
-                backups.unshift(newBackup);
-                localStorage.setItem(`backups_${selectedServer.id}`, JSON.stringify(backups));
-                alert('✅ Backup created! (Simulation mode)');
-                renderBackups();
-            }
-
-            document.getElementById('backupName').value = '';
-        }
-
-        async function downloadBackup(backupId) {
-            try {
-                const token = localStorage.getItem('token');
-                window.open(`/api/backups/${backupId}/download?token=${token}`, '_blank');
-            } catch (err) {
-                alert('ℹ️ Simulation mode - no actual file to download');
+                alert('Error: ' + err.message);
             }
         }
 
@@ -404,20 +381,14 @@
             }
 
             try {
-                const token = localStorage.getItem('token');
-                const response = await fetch(`/api/backups/${backupId}/restore`, {
-                    method: 'POST',
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-
-                const data = await response.json();
-                if (data.success) {
+                const result = await API.restoreBackup(backupId);
+                if (result.success) {
                     alert('✅ Backup restored successfully!');
                 } else {
-                    alert('❌ Error: ' + data.message);
+                    alert('❌ Error: ' + result.message);
                 }
             } catch (err) {
-                alert('✅ Backup restored! (Simulation mode)');
+                alert('Error: ' + err.message);
             }
         }
 
@@ -427,25 +398,15 @@
             }
 
             try {
-                const token = localStorage.getItem('token');
-                const response = await fetch(`/api/backups/${backupId}`, {
-                    method: 'DELETE',
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-
-                const data = await response.json();
-                if (data.success) {
+                const result = await API.deleteBackup(backupId);
+                if (result.success) {
                     alert('✅ Backup deleted!');
                     loadBackups();
                 } else {
-                    alert('❌ Error: ' + data.message);
+                    alert('❌ Error: ' + result.message);
                 }
             } catch (err) {
-                // Simulation mode
-                backups = backups.filter(b => b.id !== backupId);
-                localStorage.setItem(`backups_${selectedServer.id}`, JSON.stringify(backups));
-                alert('✅ Backup deleted! (Simulation mode)');
-                renderBackups();
+                alert('Error: ' + err.message);
             }
         }
 

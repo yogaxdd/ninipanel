@@ -225,7 +225,6 @@
         </div>
     </div>
     <script src="../js/api.js"></script>
-    <script src="../js/storage.js"></script>
     <script>
         // Check login
         if (!API.isLoggedIn()) {
@@ -234,45 +233,63 @@
 
         const user = API.getUser();
         let currentTicket = null;
+        let allTickets = [];
 
-        // Settings
-        const settings = Storage.getSettings();
-        const waNumber = settings.adminWhatsApp || '08123456789';
-        document.getElementById('whatsappBtn').href = `https://wa.me/${waNumber.replace(/^0/, '62')}?text=${encodeURIComponent('Halo admin NiniPanel, saya butuh bantuan.')}`;
+        // Load Settings (WhatsApp)
+        async function loadSettings() {
+            try {
+                const response = await API.getSettings();
+                const settings = response.success ? response.settings : {};
+                const waNumber = settings.adminWhatsApp || '08123456789';
+                document.getElementById('whatsappBtn').href = `https://wa.me/${waNumber.replace(/^0/, '62')}?text=${encodeURIComponent('Halo admin NiniPanel, saya butuh bantuan.')}`;
+            } catch (err) {
+                console.error('Failed to load settings:', err);
+            }
+        }
+        loadSettings();
 
         // Load tickets
-        function loadTickets() {
-            const tickets = Storage.getTicketsByUser(user.id);
-            const ticketsList = document.getElementById('ticketsList');
+        async function loadTickets() {
+            try {
+                const response = await API.getTickets();
+                allTickets = response.success ? response.tickets : [];
+                const ticketsList = document.getElementById('ticketsList');
 
-            if (tickets.length === 0) return;
+                if (allTickets.length === 0) {
+                    ticketsList.innerHTML = '<div style="text-align: center; padding: 2rem; color: var(--text-secondary);">Belum ada tiket support.</div>';
+                    return;
+                }
 
-            const statusBadges = {
-                open: '<span class="badge badge-success">Open</span>',
-                replied: '<span class="badge badge-primary">Replied</span>',
-                closed: '<span class="badge badge-danger">Closed</span>'
-            };
+                const statusBadges = {
+                    open: '<span class="badge badge-success">Open</span>',
+                    replied: '<span class="badge badge-primary">Replied</span>',
+                    closed: '<span class="badge badge-danger">Closed</span>'
+                };
 
-            const categoryLabels = {
-                billing: 'Billing',
-                technical: 'Technical',
-                sales: 'Sales',
-                other: 'Other'
-            };
+                const categoryLabels = {
+                    billing: 'Billing',
+                    technical: 'Technical',
+                    sales: 'Sales',
+                    other: 'Other'
+                };
 
-            ticketsList.innerHTML = tickets.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).map(ticket => `
+                ticketsList.innerHTML = allTickets.map(ticket => `
         <div class="card ticket-card" onclick="openTicket('${ticket.id}')">
-          <div class="ticket-header">
-            <span class="ticket-subject">${ticket.subject}</span>
-            ${statusBadges[ticket.status]}
-          </div>
-          <div class="ticket-meta">
-            <span>🏷️ ${categoryLabels[ticket.category] || ticket.category}</span>
-            <span>📅 ${new Date(ticket.createdAt).toLocaleDateString('id-ID')}</span>
-            <span>💬 ${ticket.messages?.length || 1} pesan</span>
-          </div>
+            <div class="ticket-header">
+                <span class="ticket-subject">${ticket.subject}</span>
+                ${statusBadges[ticket.status]}
+            </div>
+            <div class="ticket-meta">
+                <span>🏷️ ${categoryLabels[ticket.category] || ticket.category}</span>
+                <span>📅 ${new Date(ticket.createdAt).toLocaleDateString('id-ID')}</span>
+                <span>💬 ${ticket.messages?.length || 0} pesan</span>
+            </div>
         </div>
-      `).join('');
+        `).join('');
+            } catch (err) {
+                console.error('Failed to load tickets:', err);
+                document.getElementById('ticketsList').innerHTML = '<div style="text-align: center; color: var(--danger);">Gagal memuat tiket.</div>';
+            }
         }
 
         function showNewTicketModal() {
@@ -283,7 +300,7 @@
             document.getElementById(id).classList.remove('active');
         }
 
-        function submitTicket() {
+        async function submitTicket() {
             const category = document.getElementById('ticketCategory').value;
             const subject = document.getElementById('ticketSubject').value;
             const message = document.getElementById('ticketMessage').value;
@@ -293,29 +310,48 @@
                 return;
             }
 
-            const ticket = Storage.addTicket({
-                userId: user.id,
-                category,
-                subject,
-                messages: [{
-                    sender: 'user',
-                    senderName: user.name,
-                    content: message,
-                    createdAt: new Date().toISOString()
-                }]
-            });
+            // Disable button
+            const btn = document.querySelector('#newTicketModal .modal-footer .btn-primary');
+            const originalText = btn.innerText;
+            btn.disabled = true;
+            btn.innerText = 'Creating...';
 
-            if (ticket) {
-                closeModal('newTicketModal');
-                document.getElementById('newTicketForm').reset();
-                loadTickets();
-                alert('Tiket berhasil dibuat! Kami akan segera merespon.');
+            try {
+                const result = await API.createTicket({
+                    category,
+                    subject,
+                    message
+                });
+
+                if (result.success) {
+                    closeModal('newTicketModal');
+                    document.getElementById('newTicketForm').reset();
+                    loadTickets();
+                    alert('Tiket berhasil dibuat! Kami akan segera merespon.');
+                } else {
+                    alert('Gagal membuat tiket: ' + result.message);
+                }
+            } catch (err) {
+                alert('Error: ' + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerText = originalText;
             }
         }
 
-        function openTicket(ticketId) {
-            const tickets = Storage.getTickets();
-            currentTicket = tickets.find(t => t.id === ticketId);
+        async function openTicket(ticketId) {
+            // Find in local cache first or fetch single
+            currentTicket = allTickets.find(t => t.id === ticketId);
+
+            // Re-fetch to get latest messages
+            try {
+                const result = await API.getTicket(ticketId);
+                if (result.success) {
+                    currentTicket = result.ticket;
+                }
+            } catch (err) {
+                console.error('Failed to refresh ticket:', err);
+            }
 
             if (!currentTicket) return;
 
@@ -329,46 +365,53 @@
             const container = document.getElementById('chatMessages');
 
             container.innerHTML = messages.map(msg => {
-                const isUser = msg.sender === 'user';
-                const initials = msg.senderName?.split(' ').map(n => n[0]).join('').substring(0, 2) || '??';
+                const isUser = msg.sender === 'user'; // Or check against current user ID if sender is ID
+                const initials = (msg.senderName || 'U').split(' ').map(n => n[0]).join('').substring(0, 2);
                 const time = new Date(msg.createdAt).toLocaleString('id-ID', {
                     day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
                 });
 
                 return `
-          <div class="chat-message ${isUser ? 'user' : 'admin'}">
+        <div class="chat-message ${isUser ? 'user' : 'admin'}">
             <div class="chat-avatar">${initials}</div>
             <div class="chat-bubble">
-              <div style="font-weight: 500; margin-bottom: 4px;">${msg.senderName}</div>
-              <div>${msg.content}</div>
-              <div class="time">${time}</div>
+                <div style="font-weight: 500; margin-bottom: 4px;">${msg.senderName || msg.sender}</div>
+                <div>${msg.content}</div>
+                <div class="time">${time}</div>
             </div>
-          </div>
+        </div>
         `;
             }).join('');
 
             container.scrollTop = container.scrollHeight;
         }
 
-        function sendReply() {
+        async function sendReply() {
             const input = document.getElementById('replyInput');
             const content = input.value.trim();
 
             if (!content || !currentTicket) return;
 
-            Storage.addTicketMessage(currentTicket.id, {
-                sender: 'user',
-                senderName: user.name,
-                content
-            });
+            // UI
+            input.disabled = true;
 
-            // Refresh ticket
-            const tickets = Storage.getTickets();
-            currentTicket = tickets.find(t => t.id === currentTicket.id);
+            try {
+                const result = await API.replyTicket(currentTicket.id, content);
 
-            input.value = '';
-            renderMessages();
-            loadTickets();
+                if (result.success) {
+                    input.value = '';
+                    // Refresh ticket messages
+                    await openTicket(currentTicket.id);
+                    loadTickets(); // Refresh list count
+                } else {
+                    alert('Gagal mengirim pesan: ' + result.message);
+                }
+            } catch (err) {
+                alert('Error: ' + err.message);
+            } finally {
+                input.disabled = false;
+                input.focus();
+            }
         }
 
         // Enter to send

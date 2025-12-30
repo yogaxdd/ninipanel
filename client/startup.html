@@ -198,44 +198,53 @@
         let selectedServer = null;
         let envVariables = [];
 
-        // Load servers
-        function loadServers() {
-            const servers = Storage.getServersByUser(user.id);
-            const selector = document.getElementById('serverSelector');
+        // Load servers from API
+        async function loadServers() {
+            try {
+                const result = await API.getServers();
+                const servers = result.success ? result.servers : [];
+                const selector = document.getElementById('serverSelector');
 
-            if (servers.length === 0) return;
+                if (servers.length === 0) return;
 
-            selector.innerHTML = '<div style="color: var(--text-secondary);">Pilih server:</div>' +
-                servers.map(server => `
+                selector.innerHTML = '<div style="color: var(--text-secondary);">Pilih server:</div>' +
+                    servers.map(server => `
                 <div class="server-tab" data-server="${server.id}">
                     <span class="vps-status ${server.status}"><span class="dot"></span></span>
                     <span>${server.name || 'VPS-' + server.id.substring(0, 6).toUpperCase()}</span>
                 </div>
             `).join('');
 
-            selector.querySelectorAll('.server-tab').forEach(tab => {
-                tab.addEventListener('click', () => {
-                    selector.querySelectorAll('.server-tab').forEach(t => t.classList.remove('active'));
-                    tab.classList.add('active');
-                    selectedServer = servers.find(s => s.id === tab.dataset.server);
-                    loadStartupConfig();
+                selector.querySelectorAll('.server-tab').forEach(tab => {
+                    tab.addEventListener('click', () => {
+                        selector.querySelectorAll('.server-tab').forEach(t => t.classList.remove('active'));
+                        tab.classList.add('active');
+                        // highlight the clicked tab
+                        selectedServer = servers.find(s => s.id === tab.dataset.server);
+                        loadStartupConfig();
+                    });
                 });
-            });
 
-            // Auto-select first
-            if (servers[0]) {
-                selectedServer = servers[0];
-                selector.querySelector('.server-tab').classList.add('active');
-                loadStartupConfig();
+                // Auto-select first
+                if (servers[0]) {
+                    selectedServer = servers[0];
+                    selector.querySelector('.server-tab').classList.add('active');
+                    loadStartupConfig();
+                }
+            } catch (err) {
+                console.error('Failed to load servers:', err);
+                alert('Gagal memuat server.');
             }
         }
+
+        let currentConfig = {};
 
         async function loadStartupConfig() {
             if (!selectedServer) return;
 
             // Default config
-            let config = {
-                startupCommand: `if [[ -d .git ]] && [[ {{AUTO_UPDATE}} == "1" ]]; then git pull; fi; if [[ ! -z \${NODE_PACKAGES} ]]; then /usr/local/bin/npm install \${NODE_PACKAGES}; fi; if [[ ! -z \${UNNODE_PACKAGES} ]]; then /usr/local/bin/npm uninstall \${UNNODE_PACKAGES}; fi; if [ -f /home/container/package.json ]; then /usr/local/bin/npm install; fi; if [[ ! -z \${CUSTOM_ENVIRONMENT_VARIABLES} ]]; then vars=$(echo \${CUSTOM_ENVIRONMENT_VARIABLES} | tr ';' '\\n'); for line in $vars; do export $line; done fi; /usr/local/bin/\${CMD_RUN};`,
+            currentConfig = {
+                startupCommand: `npm start`,
                 dockerImage: 'node:18-alpine',
                 envVariables: [],
                 gitRepo: '',
@@ -247,21 +256,51 @@
 
             // Try to load from API
             try {
-                const token = localStorage.getItem('token');
-                const response = await fetch(`/api/startup/${selectedServer.id}`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                const data = await response.json();
-                if (data.success && data.config) {
-                    config = { ...config, ...data.config };
+                const result = await API.getStartupConfig(selectedServer.id);
+                if (result.success && result.config) {
+                    currentConfig = { ...currentConfig, ...result.config };
                 }
             } catch (err) {
-                console.log('Using default config');
+                console.log('Using default config or error loading:', err);
             }
 
-            envVariables = config.envVariables || [];
-            renderStartupForm(config);
+            envVariables = currentConfig.envVariables || [];
+            renderStartupForm(currentConfig);
         }
+
+        async function saveStartupConfig() {
+            if (!selectedServer) return;
+
+            const configToSave = {
+                ...currentConfig, // Preserve existing values logic
+                dockerImage: document.getElementById('dockerImage').value,
+                gitRepo: document.getElementById('gitRepo').value,
+                gitBranch: document.getElementById('gitBranch').value,
+                gitUsername: document.getElementById('gitUsername').value,
+                gitToken: document.getElementById('gitToken').value,
+                commandRun: document.getElementById('commandRun').value,
+                envVariables: envVariables.filter(e => e.key)
+            };
+
+            // Generate startup command if needed, or keep existing. 
+            // For now, we keep existing startupCommand as it seems read-only in UI.
+            // But if we wanted to regenerate it based on inputs (like Pterodactyl does), we would do it here.
+
+            try {
+                const result = await API.updateStartupConfig(selectedServer.id, configToSave);
+
+                if (result.success) {
+                    alert('✅ Startup configuration saved!');
+                    currentConfig = result.config; // Update local config
+                    renderStartupForm(currentConfig);
+                } else {
+                    alert('❌ Error: ' + result.message);
+                }
+            } catch (err) {
+                alert('Error saving config: ' + err.message);
+            }
+        }
+
 
         function renderStartupForm(config) {
             document.getElementById('startupContainer').innerHTML = `

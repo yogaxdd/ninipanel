@@ -112,48 +112,56 @@
         const user = API.getUser();
 
         // Load billing data
-        function loadBilling() {
-            const orders = Storage.getOrdersByUser(user.id);
+        async function loadBilling() {
+            try {
+                const result = await API.getOrders();
+                const orders = result.success ? result.orders : [];
 
-            // Stats
-            const totalSpent = orders
-                .filter(o => o.status === 'paid' || o.status === 'active')
-                .reduce((sum, o) => sum + (o.amount || 0), 0);
+                // Stats
+                const totalSpent = orders
+                    .filter(o => o.status === 'paid' || o.status === 'active')
+                    .reduce((sum, o) => sum + (o.amount || 0), 0);
 
-            document.getElementById('totalSpent').textContent = `Rp ${totalSpent.toLocaleString('id-ID')}`;
-            document.getElementById('totalOrders').textContent = orders.length;
-            document.getElementById('pendingPayments').textContent = orders.filter(o => o.status === 'pending' || o.status === 'pending_verification').length;
+                document.getElementById('totalSpent').textContent = `Rp ${totalSpent.toLocaleString('id-ID')}`;
+                document.getElementById('totalOrders').textContent = orders.length;
+                document.getElementById('pendingPayments').textContent = orders.filter(o => o.status === 'pending' || o.status === 'pending_verification').length;
 
-            // Table
-            const tbody = document.getElementById('ordersBody');
+                // Table
+                const tbody = document.getElementById('ordersBody');
 
-            if (orders.length === 0) {
-                return;
+                if (orders.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">Belum ada riwayat transaksi.</td></tr>';
+                    return;
+                }
+
+                const statusBadges = {
+                    pending: '<span class="badge badge-warning">Pending</span>',
+                    pending_verification: '<span class="badge badge-warning">Verifikasi</span>',
+                    paid: '<span class="badge badge-success">Dibayar</span>',
+                    active: '<span class="badge badge-success">Aktif</span>',
+                    expired: '<span class="badge badge-danger">Expired</span>',
+                    cancelled: '<span class="badge badge-danger">Cancelled</span>',
+                    rejected: '<span class="badge badge-danger">Rejected</span>'
+                };
+
+                tbody.innerHTML = orders.map(order => `
+            <tr>
+              <td><code>${order.id.substring(0, 8).toUpperCase()}</code></td>
+              <td>${order.planName}</td>
+              <td>${order.durationLabel}</td>
+              <td>Rp ${order.amount.toLocaleString('id-ID')}</td>
+              <td>${statusBadges[order.status] || order.status}</td>
+              <td>${new Date(order.createdAt).toLocaleDateString('id-ID')}</td>
+              <td>
+                ${order.status === 'pending' ? `<a href="../payment.html?order=${order.id}" class="btn btn-primary btn-sm">Bayar</a>` : ''}
+                ${order.status === 'pending_verification' ? '<span style="color: var(--text-muted); font-size: 0.875rem;">Menunggu verifikasi...</span>' : ''}
+              </td>
+            </tr>
+          `).join('');
+            } catch (err) {
+                console.error('Failed to load billing:', err);
+                document.getElementById('ordersBody').innerHTML = '<tr><td colspan="7" style="color: var(--danger); text-align: center;">Gagal memuat data.</td></tr>';
             }
-
-            const statusBadges = {
-                pending: '<span class="badge badge-warning">Pending</span>',
-                pending_verification: '<span class="badge badge-warning">Verifikasi</span>',
-                paid: '<span class="badge badge-success">Dibayar</span>',
-                active: '<span class="badge badge-success">Aktif</span>',
-                expired: '<span class="badge badge-danger">Expired</span>',
-                cancelled: '<span class="badge badge-danger">Cancelled</span>'
-            };
-
-            tbody.innerHTML = orders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).map(order => `
-        <tr>
-          <td><code>${order.id.substring(0, 8).toUpperCase()}</code></td>
-          <td>${order.planName}</td>
-          <td>${order.durationLabel}</td>
-          <td>Rp ${order.amount.toLocaleString('id-ID')}</td>
-          <td>${statusBadges[order.status] || order.status}</td>
-          <td>${new Date(order.createdAt).toLocaleDateString('id-ID')}</td>
-          <td>
-            ${order.status === 'pending' ? `<a href="../payment.html?order=${order.id}" class="btn btn-primary btn-sm">Bayar</a>` : ''}
-            ${order.status === 'pending_verification' ? '<span style="color: var(--text-muted); font-size: 0.875rem;">Menunggu verifikasi...</span>' : ''}
-          </td>
-        </tr>
-      `).join('');
         }
 
         loadBilling();

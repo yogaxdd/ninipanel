@@ -27,14 +27,20 @@ const API = {
     },
 
     // Generic request
-    async request(method, endpoint, body = null) {
+    async request(method, endpoint, body = null, customHeaders = {}) {
+        const headers = this.getHeaders();
         const options = {
             method,
-            headers: this.getHeaders()
+            headers: { ...headers, ...customHeaders }
         };
 
         if (body) {
-            options.body = JSON.stringify(body);
+            if (body instanceof FormData) {
+                delete options.headers['Content-Type']; // Let browser set boundary
+                options.body = body;
+            } else {
+                options.body = JSON.stringify(body);
+            }
         }
 
         const response = await fetch(`${this.baseUrl}${endpoint}`, options);
@@ -160,8 +166,105 @@ const API = {
         return this.request('POST', `/servers/${id}/restart`);
     },
 
+    async startServer(id) {
+        return this.request('POST', `/servers/${id}/start`);
+    },
+
+    async stopServer(id) {
+        return this.request('POST', `/servers/${id}/stop`);
+    },
+
+    async restartServer(id) {
+        return this.request('POST', `/servers/${id}/restart`);
+    },
+
     async deleteServer(id) {
         return this.request('DELETE', `/servers/${id}`);
+    },
+
+    // Files
+    async listFiles(serverId, path = '/root') {
+        const query = path ? `?path=${encodeURIComponent(path)}` : '';
+        return this.request('GET', `/files/${serverId}${query}`);
+    },
+
+    // Startup
+    async getStartupConfig(serverId) {
+        return this.request('GET', `/startup/${serverId}`);
+    },
+
+    async updateStartupConfig(serverId, config) {
+        return this.request('PUT', `/startup/${serverId}`, config);
+    },
+
+    async getDockerImages(serverId) {
+        return this.request('GET', `/startup/${serverId}/images`);
+    },
+
+    // Tickets
+    async getTickets() {
+        return this.request('GET', '/tickets');
+    },
+
+    async getTicket(id) {
+        return this.request('GET', `/tickets/${id}`);
+    },
+
+    async createTicket(data) {
+        return this.request('POST', '/tickets', data);
+    },
+
+    async replyTicket(id, message) {
+        return this.request('POST', `/tickets/${id}/message`, { message });
+    },
+
+    async closeTicket(id) {
+        return this.request('PUT', `/tickets/${id}/close`);
+    },
+
+    async deleteTicket(id) {
+        return this.request('DELETE', `/tickets/${id}`);
+    },
+
+    // Settings
+    async getSettings() {
+        return this.request('GET', '/settings/public');
+    },
+
+    async getAdminSettings() {
+        return this.request('GET', '/settings');
+    },
+
+    async updateSettings(data) {
+        return this.request('PUT', '/settings', data);
+    },
+
+    async uploadQris(file) {
+        const formData = new FormData();
+        formData.append('qris', file);
+        return this.request('POST', '/settings/qris', formData, {});
+    },
+
+    // Backups
+    async getBackups(serverId) {
+        return this.request('GET', `/backups/server/${serverId}`);
+    },
+
+    async createBackup(serverId, name) {
+        return this.request('POST', `/backups/server/${serverId}`, { name });
+    },
+
+    async restoreBackup(id) {
+        return this.request('POST', `/backups/${id}/restore`);
+    },
+
+    async deleteBackup(id) {
+        return this.request('DELETE', `/backups/${id}`);
+    },
+
+    // Admin
+    async getUsers() {
+        return this.request('GET', '/auth/users');
     },
 
     async getServerStats(id) {

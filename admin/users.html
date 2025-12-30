@@ -92,7 +92,6 @@
     </div>
 
     <script src="../js/api.js"></script>
-    <script src="../js/storage.js"></script>
     <script>
         // Check admin
         if (!API.isLoggedIn() || !API.isAdmin()) {
@@ -100,31 +99,38 @@
         }
 
         // Load users
-        function loadUsers() {
-            const users = Storage.getUsers().filter(u => u.role !== 'admin');
-            const servers = Storage.getServers();
-            const tbody = document.getElementById('usersBody');
+        async function loadUsers() {
+            try {
+                const [usersResult, serversResult] = await Promise.all([
+                    API.getUsers(),
+                    API.getServers()
+                ]);
 
-            // Stats
-            document.getElementById('totalUsers').textContent = users.length;
+                const users = usersResult.success ? usersResult.users.filter(u => u.role !== 'admin') : [];
+                const servers = serversResult.success ? serversResult.servers : [];
+                const tbody = document.getElementById('usersBody');
 
-            const usersWithServers = new Set(servers.map(s => s.userId));
-            document.getElementById('activeUsers').textContent = usersWithServers.size;
+                // Stats
+                document.getElementById('totalUsers').textContent = users.length;
 
-            const weekAgo = new Date();
-            weekAgo.setDate(weekAgo.getDate() - 7);
-            const newUsers = users.filter(u => new Date(u.createdAt) > weekAgo);
-            document.getElementById('newUsers').textContent = newUsers.length;
+                const usersWithServers = new Set(servers.map(s => s.userId));
+                document.getElementById('activeUsers').textContent = usersWithServers.size;
 
-            if (users.length === 0) {
-                return;
-            }
+                const weekAgo = new Date();
+                weekAgo.setDate(weekAgo.getDate() - 7);
+                const newUsers = users.filter(u => new Date(u.createdAt) > weekAgo);
+                document.getElementById('newUsers').textContent = newUsers.length;
 
-            tbody.innerHTML = users.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).map(user => {
-                const userServers = servers.filter(s => s.userId === user.id);
-                const initials = user.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+                if (users.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">No users found.</td></tr>';
+                    return;
+                }
 
-                return `
+                tbody.innerHTML = users.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).map(user => {
+                    const userServers = servers.filter(s => s.userId === user.id);
+                    const initials = (user.name || 'U').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+
+                    return `
           <tr>
             <td>
               <div class="d-flex align-center gap-1">
@@ -139,11 +145,16 @@
                 <span class="badge badge-success">${userServers.length} server</span>
               ` : '<span style="color: var(--text-muted);">-</span>'}
             </td>
-            <td><span class="badge badge-primary">User</span></td>
             <td>${new Date(user.createdAt).toLocaleDateString('id-ID')}</td>
+            <td>
+              <button class="btn btn-secondary btn-sm" onclick="alert('Manage user - Coming soon!')">Manage</button>
+            </td>
           </tr>
         `;
-            }).join('');
+                }).join('');
+            } catch (err) {
+                console.error('Error loading users:', err);
+            }
         }
 
         loadUsers();

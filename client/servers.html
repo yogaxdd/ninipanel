@@ -145,27 +145,29 @@
 
     const user = API.getUser();
 
-    // Load servers
-    function loadServers() {
-      const servers = Storage.getServersByUser(user.id);
-      const serversList = document.getElementById('serversList');
+    // Load servers from API
+    async function loadServers() {
+      try {
+        const result = await API.getServers();
+        const servers = result.success ? result.servers : [];
+        const serversList = document.getElementById('serversList');
 
-      if (servers.length === 0) {
-        return;
-      }
+        if (servers.length === 0) {
+          return;
+        }
 
-      serversList.innerHTML = servers.map(server => {
-        const statusClass = server.status === 'online' ? 'online' :
-          server.status === 'starting' ? 'starting' : 'offline';
-        const statusText = server.status === 'online' ? 'Online' :
-          server.status === 'starting' ? 'Starting...' : 'Offline';
+        serversList.innerHTML = servers.map(server => {
+          const statusClass = server.status === 'online' ? 'online' :
+            server.status === 'starting' ? 'starting' : 'offline';
+          const statusText = server.status === 'online' ? 'Online' :
+            server.status === 'starting' ? 'Starting...' : 'Offline';
 
-        // Simulate random usage
-        const ramUsage = Math.floor(Math.random() * 70) + 10;
-        const diskUsage = Math.floor(Math.random() * 50) + 10;
-        const cpuUsage = Math.floor(Math.random() * 60) + 5;
+          // Simulate random usage
+          const ramUsage = Math.floor(Math.random() * 70) + 10;
+          const diskUsage = Math.floor(Math.random() * 50) + 10;
+          const cpuUsage = Math.floor(Math.random() * 60) + 5;
 
-        return `
+          return `
           <div class="card server-card">
             <div class="server-header">
               <div class="server-info">
@@ -249,35 +251,53 @@
             </div>
           </div>
         `;
-      }).join('');
-    }
-
-    function startServer(id) {
-      Storage.updateServer(id, { status: 'starting' });
-      loadServers();
-
-      // Simulate startup delay
-      setTimeout(() => {
-        Storage.updateServer(id, { status: 'online' });
-        loadServers();
-      }, 2000);
-    }
-
-    function stopServer(id) {
-      if (confirm('Yakin ingin menghentikan server?')) {
-        Storage.updateServer(id, { status: 'offline' });
-        loadServers();
+        }).join('');
+      } catch (err) {
+        console.error('Failed to load servers:', err);
       }
     }
 
-    function restartServer(id) {
-      Storage.updateServer(id, { status: 'starting' });
-      loadServers();
+    async function startServer(id) {
+      try {
+        const result = await API.startServer(id);
+        if (result.success) {
+          loadServers();
+          alert('Server starting...');
+        } else {
+          alert('Gagal start server: ' + result.message);
+        }
+      } catch (err) {
+        alert('Error: ' + err.message);
+      }
+    }
 
-      setTimeout(() => {
-        Storage.updateServer(id, { status: 'online' });
-        loadServers();
-      }, 3000);
+    async function stopServer(id) {
+      if (confirm('Yakin ingin menghentikan server?')) {
+        try {
+          const result = await API.stopServer(id);
+          if (result.success) {
+            loadServers();
+          } else {
+            alert('Gagal stop server: ' + result.message);
+          }
+        } catch (err) {
+          alert('Error: ' + err.message);
+        }
+      }
+    }
+
+    async function restartServer(id) {
+      try {
+        const result = await API.restartServer(id);
+        if (result.success) {
+          loadServers();
+          alert('Server restarting...');
+        } else {
+          alert('Gagal restart server: ' + result.message);
+        }
+      } catch (err) {
+        alert('Error: ' + err.message);
+      }
     }
 
     loadServers();

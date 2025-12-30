@@ -149,7 +149,6 @@
     </div>
 
     <script src="../js/api.js"></script>
-    <script src="../js/storage.js"></script>
     <script>
         // Check admin
         if (!API.isLoggedIn() || !API.isAdmin()) {
@@ -157,63 +156,85 @@
         }
 
         // Load settings
-        function loadSettings() {
-            const settings = Storage.getSettings();
+        async function loadSettings() {
+            try {
+                const response = await API.getAdminSettings();
+                const settings = response.success ? response.settings : {};
 
-            document.getElementById('siteName').value = settings.siteName || 'NiniPanel';
-            document.getElementById('adminWhatsApp').value = settings.adminWhatsApp || '';
+                document.getElementById('siteName').value = settings.siteName || 'NiniPanel';
+                document.getElementById('adminWhatsApp').value = settings.adminWhatsApp || '';
 
-            // QRIS preview
-            if (settings.qrisImage) {
-                document.getElementById('qrisPreview').innerHTML = `
-          <img src="${settings.qrisImage}" style="max-width: 200px; max-height: 200px; border-radius: var(--radius-lg);">
-        `;
+                // QRIS preview
+                if (settings.qrisImage) {
+                    document.getElementById('qrisPreview').innerHTML = `
+              <img src="${settings.qrisImage}" style="max-width: 200px; max-height: 200px; border-radius: var(--radius-lg);">
+            `;
+                } else {
+                    document.getElementById('qrisPreview').innerHTML = `
+                        <div
+                            style="width: 200px; height: 200px; background: var(--glass-bg); border-radius: var(--radius-lg); display: flex; align-items: center; justify-content: center; margin: 0 auto; color: var(--text-secondary);">
+                            Belum ada QRIS
+                        </div>
+                    `;
+                }
+
+                // Pricing table
+                const plans = settings.plans || {};
+                const pricingBody = document.getElementById('pricingBody');
+
+                pricingBody.innerHTML = Object.entries(plans).map(([key, plan]) => `
+            <tr>
+              <td style="font-weight: 500;">${plan.name}</td>
+              <td>${plan.ram}MB</td>
+              <td>${plan.disk >= 1024 ? (plan.disk / 1024) + 'GB' : plan.disk + 'MB'}</td>
+              <td>Rp ${plan.daily?.toLocaleString('id-ID') || 0}</td>
+              <td>Rp ${plan.weekly?.toLocaleString('id-ID') || 0}</td>
+              <td>Rp ${plan.monthly?.toLocaleString('id-ID') || 0}</td>
+            </tr>
+          `).join('');
+            } catch (err) {
+                console.error('Failed to load settings:', err);
             }
-
-            // Pricing table
-            const plans = settings.plans || {};
-            const pricingBody = document.getElementById('pricingBody');
-
-            pricingBody.innerHTML = Object.entries(plans).map(([key, plan]) => `
-        <tr>
-          <td style="font-weight: 500;">${plan.name}</td>
-          <td>${plan.ram}MB</td>
-          <td>${plan.disk >= 1024 ? (plan.disk / 1024) + 'GB' : plan.disk + 'MB'}</td>
-          <td>Rp ${plan.daily?.toLocaleString('id-ID') || 0}</td>
-          <td>Rp ${plan.weekly?.toLocaleString('id-ID') || 0}</td>
-          <td>Rp ${plan.monthly?.toLocaleString('id-ID') || 0}</td>
-        </tr>
-      `).join('');
         }
 
         // General form
-        document.getElementById('generalForm').addEventListener('submit', (e) => {
+        document.getElementById('generalForm').addEventListener('submit', async (e) => {
             e.preventDefault();
 
             const siteName = document.getElementById('siteName').value;
             const adminWhatsApp = document.getElementById('adminWhatsApp').value;
 
-            Storage.updateSettings({ siteName, adminWhatsApp });
-            alert('Settings berhasil disimpan!');
+            try {
+                const result = await API.updateSettings({ siteName, adminWhatsApp });
+                if (result.success) {
+                    alert('Settings berhasil disimpan!');
+                } else {
+                    alert('Gagal menyimpan settings: ' + result.message);
+                }
+            } catch (err) {
+                alert('Error: ' + err.message);
+            }
         });
 
         // QRIS upload
-        function saveQris() {
+        async function saveQris() {
             const file = document.getElementById('qrisFile').files[0];
             if (!file) {
                 alert('Pilih file QRIS terlebih dahulu.');
                 return;
             }
 
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                Storage.updateSettings({ qrisImage: e.target.result });
-                document.getElementById('qrisPreview').innerHTML = `
-          <img src="${e.target.result}" style="max-width: 200px; max-height: 200px; border-radius: var(--radius-lg);">
-        `;
-                alert('QRIS berhasil disimpan!');
-            };
-            reader.readAsDataURL(file);
+            try {
+                const result = await API.uploadQris(file);
+                if (result.success) {
+                    alert('QRIS uploaded successfully!');
+                    loadSettings(); // Reload to show new image
+                } else {
+                    alert('Gagal upload QRIS: ' + result.message);
+                }
+            } catch (err) {
+                alert('Error: ' + err.message);
+            }
         }
 
         // Password form
