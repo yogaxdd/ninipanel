@@ -297,8 +297,8 @@
         </div>
     </div>
 
+    <script src="js/api.js"></script>
     <script src="js/storage.js"></script>
-    <script src="js/auth.js"></script>
     <script>
         // Get order ID from URL
         const urlParams = new URLSearchParams(window.location.search);
@@ -308,35 +308,38 @@
             window.location.href = 'order.html';
         }
 
-        // Get order data
-        const orders = Storage.getOrders();
-        const order = orders.find(o => o.id === orderId);
+        let order = null;
 
-        if (!order) {
-            alert('Order tidak ditemukan.');
-            window.location.href = 'order.html';
+        // Fetch order from API
+        async function loadOrder() {
+            try {
+                const result = await API.getOrder(orderId);
+                if (!result.success || !result.order) {
+                    throw new Error('Order tidak ditemukan');
+                }
+                order = result.order;
+                displayOrder(order);
+            } catch (err) {
+                alert('Order tidak ditemukan.');
+                window.location.href = 'order.html';
+            }
         }
 
-        // Display order details
-        document.getElementById('orderId').textContent = order.id.toUpperCase();
-        document.getElementById('orderPlan').textContent = order.planName;
-        document.getElementById('orderDuration').textContent = order.durationLabel;
-        document.getElementById('orderRam').textContent = `${order.ram}MB`;
-        document.getElementById('orderDisk').textContent = order.disk >= 1024 ? `${order.disk / 1024}GB` : `${order.disk}MB`;
-        document.getElementById('orderAmount').textContent = `Rp ${order.amount.toLocaleString('id-ID')}`;
+        function displayOrder(order) {
+            document.getElementById('orderId').textContent = order.id.substring(0, 8).toUpperCase();
+            document.getElementById('orderPlan').textContent = order.planName;
+            document.getElementById('orderDuration').textContent = order.durationLabel;
+            document.getElementById('orderRam').textContent = `${order.ram}MB`;
+            document.getElementById('orderDisk').textContent = order.disk >= 1024 ? `${order.disk / 1024}GB` : `${order.disk}MB`;
+            document.getElementById('orderAmount').textContent = `Rp ${order.amount.toLocaleString('id-ID')}`;
 
-        // Settings
-        const settings = Storage.getSettings();
-
-        // WhatsApp button
-        const waNumber = settings.adminWhatsApp || '08123456789';
-        const waMessage = encodeURIComponent(`Halo admin NiniPanel, saya ingin konfirmasi pembayaran untuk order #${order.id.toUpperCase()}`);
-        document.getElementById('whatsappBtn').href = `https://wa.me/${waNumber.replace(/^0/, '62')}?text=${waMessage}`;
-
-        // QRIS image
-        if (settings.qrisImage) {
-            document.getElementById('qrisContainer').innerHTML = `<img src="${settings.qrisImage}" alt="QRIS" class="qris-image">`;
+            // WhatsApp button
+            const waNumber = '08123456789';
+            const waMessage = encodeURIComponent(`Halo admin NiniPanel, saya ingin konfirmasi pembayaran untuk order #${order.id.substring(0, 8).toUpperCase()}`);
+            document.getElementById('whatsappBtn').href = `https://wa.me/${waNumber.replace(/^0/, '62')}?text=${waMessage}`;
         }
+
+        loadOrder();
 
         // Countdown timer (30 minutes)
         let timeLeft = 30 * 60;
@@ -350,8 +353,6 @@
 
             if (timeLeft <= 0) {
                 clearInterval(timer);
-                // Update order status to expired
-                Storage.updateOrder(orderId, { status: 'expired' });
                 alert('Waktu pembayaran habis. Silakan buat order baru.');
                 window.location.href = 'order.html';
             }
@@ -409,35 +410,31 @@
             reader.readAsDataURL(file);
         }
 
-        // Confirm payment
-        confirmBtn.addEventListener('click', () => {
+        // Confirm payment - Upload via API
+        confirmBtn.addEventListener('click', async () => {
             if (!uploadedFile) {
                 alert('Mohon upload bukti pembayaran terlebih dahulu.');
                 return;
             }
 
             confirmBtn.disabled = true;
-            confirmBtn.innerHTML = '<span class="spinner" style="width:20px;height:20px;border-width:2px;"></span>';
+            confirmBtn.innerHTML = '<span class="spinner" style="width:20px;height:20px;border-width:2px;"></span> Uploading...';
 
-            // Simulate upload delay
-            setTimeout(() => {
-                // Convert file to base64 and save
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    Storage.updateOrder(orderId, {
-                        status: 'pending_verification',
-                        paymentProof: e.target.result,
-                        paymentDate: new Date().toISOString()
-                    });
+            try {
+                const result = await API.uploadPaymentProof(orderId, uploadedFile);
 
+                if (result.success) {
                     // Show success modal
                     document.getElementById('successModal').classList.add('active');
-
-                    // Stop countdown
                     clearInterval(timer);
-                };
-                reader.readAsDataURL(uploadedFile);
-            }, 1500);
+                } else {
+                    throw new Error(result.message || 'Upload gagal');
+                }
+            } catch (err) {
+                alert('Gagal upload bukti: ' + err.message);
+                confirmBtn.disabled = false;
+                confirmBtn.textContent = 'Konfirmasi Pembayaran';
+            }
         });
     </script>
 </body>
